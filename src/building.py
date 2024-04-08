@@ -62,30 +62,35 @@ class EnergyMeter:
 
     def get_data(self, time_from, aggregation_period="quarter"):
 
+        flag = 0
         yesterday = datetime.utcnow() - timedelta(days=1)
         time_to = yesterday.strftime("%Y-%m-%dT23:59:00Z")
+        try:
+            data = get_data_device(
+                device_id=self.energy_meter_info["id"],
+                properties=self.energy_meter_info["properties"],
+                time_to=time_to,
+                time_from=time_from,
+                aggregation_function=self.energy_meter_info["aggregation_functions"],
+                aggregation_period=aggregation_period
+            )
+            flag = 1
+        except Exception as e:
+            print(f"Is not possible to retrieve data for device {self.energy_meter_info['id']}")
 
-        data = get_data_device(
-            device_id=self.energy_meter_info["id"],
-            properties=self.energy_meter_info["properties"],
-            time_to=time_to,
-            time_from=time_from,
-            aggregation_function=self.energy_meter_info["aggregation_functions"],
-            aggregation_period=aggregation_period
-        )
+        if flag == 1:
+            df_list = {}
 
-        df_list = {}
+            for key, value_list in data.items():
+                new_key = key.split("_")[0]
+                df = pd.DataFrame(value_list, columns=['timestamp', new_key])
+                df['timestamp'] = pd.to_datetime(df['timestamp'])
+                df[new_key] = df[new_key].astype(float)
+                df_list[new_key] = df
 
-        for key, value_list in data.items():
-            new_key = key.split("_")[0]
-            df = pd.DataFrame(value_list, columns=['timestamp', new_key])
-            df['timestamp'] = pd.to_datetime(df['timestamp'])
-            df[new_key] = df[new_key].astype(float)
-            df_list[new_key] = df
+            df_energy_meter = pd.concat([df.set_index('timestamp') for df in df_list.values()], axis=1).sort_values('timestamp')
 
-        df_energy_meter = pd.concat([df.set_index('timestamp') for df in df_list.values()], axis=1).sort_values('timestamp')
-
-        self.energy_meter_data = df_energy_meter
+            self.energy_meter_data = df_energy_meter
 
 
 def load_anguillara():
