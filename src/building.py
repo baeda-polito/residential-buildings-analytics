@@ -56,7 +56,7 @@ class EnergyMeter:
         self.energy_meter_info = {
             "id": energy_meter["uuid"],
             "properties": list(energy_meter["deviceType"]["properties"].keys()),
-            "aggregation_functions": [prop["aggregations"][0] for prop in energy_meter["deviceType"]["properties"].values()],
+            "aggregation_functions": ["sumOfEnergy", "delta", "delta", "delta", "arithmeticMean"],
             "name": energy_meter["name"]
         }
 
