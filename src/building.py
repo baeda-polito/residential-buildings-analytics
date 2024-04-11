@@ -1,10 +1,18 @@
 from src.api.smarthome import get_plant_info, get_devices, get_data_device
+from settings import PROJECT_ROOT
+import os
 import pandas as pd
 from datetime import datetime, timedelta
 
 
 class Building:
-    def __init__(self, uuid):
+    """
+    Classe che contiene le informazioni utili per un edificio e il suo contatore di energia.
+    :param uuid: identificativo dell'edificio
+    :param get_data_mode: modalità di recupero dei dati, online o offline. Se online, i dati verranno scaricati dal
+    portale di SmartHome, altrimenti verranno presi da un file csv nella cartella "data".
+    """
+    def __init__(self, uuid, get_data_mode="offline"):
         self.building_info = {
             "id": uuid,
             "name": None,
@@ -17,9 +25,12 @@ class Building:
             "coordinates": None,
         }
         self.get_building_info()
-        self.energy_meter = EnergyMeter(uuid)
+        self.energy_meter = EnergyMeter(uuid, get_data_mode)
 
     def get_building_info(self):
+        """
+        Estrae le informazioni dell'edificio dal portale di SmartHome e le carica nell'attributo 'building_info'
+        """
         flag = 0
         try:
             plant_info = get_plant_info(self.building_info["id"])["plant"]
@@ -39,7 +50,10 @@ class Building:
 
 
 class EnergyMeter:
-    def __init__(self, building_id):
+    """
+    Classe che contiene le informazioni utili per un contatore di energia e i suoi dati.
+    """
+    def __init__(self, building_id, mode="offline"):
         self.energy_meter_info = {
             "id": None,
             "properties": None,
@@ -48,9 +62,14 @@ class EnergyMeter:
         }
         self.energy_meter_data = None
         self.get_energy_meter_info(building_id)
-        self.get_data(time_from="2024-03-01T00:00:00Z")
+        self.set_data(building_id, mode)
 
     def get_energy_meter_info(self, building_id):
+        """
+        Estrae le informazioni del contatore di energia dal portale di SmartHome e le carica nell'attributo
+        'energy_meter_info'. In particolare estrae id, proprietà, funzioni di aggregazione e nome del contatore.
+        :param building_id: identificativo dell'edificio
+        """
         device_list = get_devices(building_id)
         energy_meter = [device for device in device_list if device["name"] == "Dispositivo Utente"][0]
         self.energy_meter_info = {
@@ -61,6 +80,12 @@ class EnergyMeter:
         }
 
     def get_data(self, time_from, aggregation_period="quarter"):
+        """
+        Estrae i dati del contatore di energia dal portale di SmartHome e li restituisce in un DataFrame.
+        :param time_from: timestamp in formato stringa dell'istante di inizio richiesta dati
+        :param aggregation_period: aggregazione temporale del dato ("aurter, hourly", etc..)
+        :return: DataFrame con i dati del contatore di energia
+        """
 
         flag = 0
         yesterday = datetime.utcnow() - timedelta(days=1)
@@ -90,20 +115,46 @@ class EnergyMeter:
 
             df_energy_meter = pd.concat([df.set_index('timestamp') for df in df_list.values()], axis=1).sort_values('timestamp')
 
-            self.energy_meter_data = df_energy_meter
+            return df_energy_meter
+        else:
+            return None
+
+    def set_data(self, building_id, mode="offline"):
+        """
+        Salva i dati del contatore di energia in base alla modalità di recupero dei dati.
+        :param building_id: Identificatore dell'edificio
+        :param mode: online od offline
+        """
+        if mode == "online":
+            self.energy_meter_data = self.get_data(time_from="2024-03-01T00:00:00Z")
+        else:
+            self.energy_meter_data = pd.read_csv(os.path.join(PROJECT_ROOT, "data", f"{building_id}.csv"))
 
 
-def load_anguillara():
+def load_anguillara(mode="offline"):
 
-    DU_1 = Building("7436df46-294b-4c97-bd1b-8aaa3aed97c5")
-    DU_2 = Building("80c3bedd-8c41-450c-ae52-1864b9ace7aa")
-    DU_3 = Building("b8296a26-2a08-417b-92d3-41e37f6a956e")
-    DU_4 = Building("d93552c8-e7f6-45bb-b382-bd4a2b969502")
-    DU_5 = Building("b87be67b-8133-4b7f-a045-c06da08b5416")
-    DU_6 = Building("9a3386b3-017c-4848-ac6d-a24bf7f36077")
-    DU_7 = Building("8490da00-eb75-45df-888e-851ea3103ec4")
-    DU_8 = Building("08f2fc03-ce0b-4cd6-ab25-8b3906feb858")
-    DU_9 = Building("3d956901-f5ea-4094-9c85-333cc68183d4")
-    DU_10 = Building("4ef8599c-2c4b-433e-94c8-ca48e23a5a07")
+    DU_1 = Building("7436df46-294b-4c97-bd1b-8aaa3aed97c5", get_data_mode=mode)
+    DU_2 = Building("80c3bedd-8c41-450c-ae52-1864b9ace7aa", get_data_mode=mode)
+    DU_3 = Building("b8296a26-2a08-417b-92d3-41e37f6a956e", get_data_mode=mode)
+    DU_4 = Building("d93552c8-e7f6-45bb-b382-bd4a2b969502", get_data_mode=mode)
+    DU_5 = Building("b87be67b-8133-4b7f-a045-c06da08b5416", get_data_mode=mode)
+    DU_6 = Building("9a3386b3-017c-4848-ac6d-a24bf7f36077", get_data_mode=mode)
+    DU_7 = Building("8490da00-eb75-45df-888e-851ea3103ec4", get_data_mode=mode)
+    DU_8 = Building("08f2fc03-ce0b-4cd6-ab25-8b3906feb858", get_data_mode=mode)
+    DU_9 = Building("3d956901-f5ea-4094-9c85-333cc68183d4", get_data_mode=mode)
+    DU_10 = Building("4ef8599c-2c4b-433e-94c8-ca48e23a5a07", get_data_mode=mode)
 
     return [DU_1, DU_2, DU_3, DU_4, DU_5, DU_6, DU_7, DU_8, DU_9, DU_10]
+
+
+def save_data():
+
+    building_list = load_anguillara(mode="online")
+
+    for building in building_list:
+        energy_meter = building.energy_meter.energy_meter_data
+        energy_meter.to_csv(os.path.join(PROJECT_ROOT, "data", f"{building.building_info['id']}.csv"), index=True)
+
+
+if __name__ == "__main__":
+    save_data()
