@@ -1,8 +1,12 @@
 import requests
 import json
+import os
+from io import StringIO
+import pandas as pd
+from settings import PROJECT_ROOT
 
 
-def get_historical_data(location_code: str, start_date: str, end_date: str):
+def get_historical_data_wunderground(location_code: str, start_date: str, end_date: str):
     """
     Estrae i dati storici meteo dal sito www.wunderground.com per massimo un mese, con una granularità di mezz'ora.
     :param location_code: codice della stazione meteo più vicina (Rome: LIRA:9:IT, Pinerolo LIMF:9:IT, Viterbo LIRF:9:IT)
@@ -36,3 +40,25 @@ def get_historical_data(location_code: str, start_date: str, end_date: str):
     result = [{key: entry[key] for key in valid_key} for entry in historical_data]
 
     return result
+
+
+def get_historical_data_solcast(start_date: str, lat=42.0837, lon=12.283):
+
+    url = f"https://api.solcast.com.au/data/historic/radiation_and_weather?latitude={lat}&longitude={lon}&start={start_date}&duration=P31D&format=csv&time_zone=longitudinal&period=PT15M"
+
+    payload = {}
+    headers = {
+        'Authorization': 'Bearer: 71CqcfmESLAzBG6xvBRMpPwGMmy7SuZD',
+        'Cookie': 'ss-id=4VKIKYxPYBajVk2kRlQL; ss-opt=temp; ss-pid=MXwb5hzFR0EQD7vlBOwW'
+    }
+
+    response = requests.request("GET", url, headers=headers, data=payload)
+    string_io = StringIO(response.text)
+    data = pd.read_csv(string_io)
+
+    return data
+
+
+if __name__ == "__main__":
+    df = get_historical_data_solcast("2024-03-01T00:00:00Z")
+    df.to_csv(os.path.join(PROJECT_ROOT, "data", "weather", "anguillara_2024-03.csv"), index=False)

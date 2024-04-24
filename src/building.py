@@ -115,6 +115,10 @@ class EnergyMeter:
 
             df_energy_meter = pd.concat([df.set_index('timestamp') for df in df_list.values()], axis=1).sort_values('timestamp')
 
+            timestamp_range = pd.date_range(start=time_from, end=time_to, freq='15min')
+            df_energy_meter = df_energy_meter.reindex(timestamp_range)
+            df_energy_meter.reset_index(inplace=True, names=['timestamp'])
+
             return df_energy_meter
         else:
             return None
@@ -128,7 +132,7 @@ class EnergyMeter:
         if mode == "online":
             self.energy_meter_data = self.get_data(time_from="2024-03-01T00:00:00Z")
         else:
-            self.energy_meter_data = pd.read_csv(os.path.join(PROJECT_ROOT, "data", f"{building_id}.csv"))
+            self.energy_meter_data = pd.read_csv(os.path.join(PROJECT_ROOT, "data", "energy_meter", f"{building_id}.csv"))
 
 
 def load_anguillara(mode="offline"):
@@ -145,16 +149,3 @@ def load_anguillara(mode="offline"):
     DU_10 = Building("4ef8599c-2c4b-433e-94c8-ca48e23a5a07", get_data_mode=mode)
 
     return [DU_1, DU_2, DU_3, DU_4, DU_5, DU_6, DU_7, DU_8, DU_9, DU_10]
-
-
-def save_data():
-
-    building_list = load_anguillara(mode="online")
-
-    for building in building_list:
-        energy_meter = building.energy_meter.energy_meter_data
-        energy_meter.to_csv(os.path.join(PROJECT_ROOT, "data", f"{building.building_info['id']}.csv"), index=True)
-
-
-if __name__ == "__main__":
-    save_data()
