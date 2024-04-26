@@ -1,8 +1,12 @@
 from src.api.smarthome import get_plant_info, get_devices, get_data_device
+from src.pre_processing import pre_process
 from settings import PROJECT_ROOT
 import os
 import pandas as pd
 from datetime import datetime, timedelta
+import warnings
+
+warnings.filterwarnings("ignore")
 
 
 class Building:
@@ -26,6 +30,7 @@ class Building:
         }
         self.get_building_info()
         self.energy_meter = EnergyMeter(uuid, get_data_mode)
+        self.energy_meter.pre_process_energy_data(self.building_info["user_type"])
 
     def get_building_info(self):
         """
@@ -61,6 +66,8 @@ class EnergyMeter:
             "name": None
         }
         self.energy_meter_data = None
+        self.energy_meter_data_cleaned = None
+        self.metrics_pv = None
         self.get_energy_meter_info(building_id)
         self.set_data(building_id, mode)
 
@@ -133,6 +140,15 @@ class EnergyMeter:
             self.energy_meter_data = self.get_data(time_from="2024-03-01T00:00:00Z")
         else:
             self.energy_meter_data = pd.read_csv(os.path.join(PROJECT_ROOT, "data", "energy_meter", f"{building_id}.csv"))
+
+    def pre_process_energy_data(self, user_type):
+        """
+        Preprocessa i dati del contatore di energia in base al tipo di utente
+        """
+        data = self.energy_meter_data.copy()
+        pre_procesing_results = pre_process(data, user_type)
+        self.energy_meter_data_cleaned = pre_procesing_results[0]
+        self.metrics_pv = pre_procesing_results[1]
 
 
 def load_anguillara(mode="offline"):

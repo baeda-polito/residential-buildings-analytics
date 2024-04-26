@@ -18,6 +18,7 @@ def save_weather_data(prefix="anguillara"):
 
     files = os.listdir(os.path.join(PROJECT_ROOT, "data", "weather"))
     files = [f for f in files if f.startswith(prefix)]
+    files = [f for f in files if f != f"{prefix}.csv"]
 
     weather_data = pd.concat([pd.read_csv(os.path.join(PROJECT_ROOT, "data", "weather", f)) for f in files])
     weather_data.drop(columns=["period"], inplace=True)

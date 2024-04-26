@@ -1,16 +1,26 @@
 import pandas as pd
 from sklearn.impute import KNNImputer
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_absolute_error, r2_score
 import numpy as np
+import os
+from settings import PROJECT_ROOT
 
 
 def pre_process(data: pd.DataFrame, user_type: str):
     """
-
-    :param data:
-    :param user_type:
+    Pre-processa i dati di "power" e "productionPower". La potenza è pre-processata in due fasi: prima vengono interpolati
+    i valore mancanti con un massimo di 4 valori consecutivi, poi viene utilizzato un algoritmo KNN per interpolare i
+    valori mancanti per i giorni in cui sono presenti più di 4 valori mancanti consecutivi ma meno di 16 (4 ore). Se vi sono
+    più di 16 valori mancanti consecutivi, si lascia NaN.
+    Per la productionPower, viene utilizzato un modello di regressione lineare tra Irradianza globale orizzontale e
+    potenza di produzione per interpolare i valori mancanti.
+    :param data: dataframe del dispositivo utente
+    :param user_type: tipo di utente (consumer o prosumer)
     :return:
     """
 
+    metrics = {}
     data.set_index("timestamp", inplace=True)
     data.index = pd.to_datetime(data.index)
     data_pre_processed = pd.DataFrame(index=data.index, columns=["power"])
@@ -30,7 +40,6 @@ def pre_process(data: pd.DataFrame, user_type: str):
             if start_index is None:
                 start_index = index
         elif start_index is not None:
-            # Check if consecutive missing values are less than or equal to the threshold
             if consecutive_missing <= 4:
                 adjusted_index_loc = max(data_pre_processed.index.get_loc(start_index) - 1, 0)
                 adjusted_index = data_pre_processed.index[adjusted_index_loc]
@@ -59,46 +68,49 @@ def pre_process(data: pd.DataFrame, user_type: str):
         knn_data_processed_long['index'] + ' ' + knn_data_processed_long['hour'])
     knn_data_processed_long.drop(columns=['index', 'hour'], inplace=True)
     knn_data_processed_long.set_index('timestamp', inplace=True)
-    knn_data_processed_long.index = pd.to_datetime(knn_data_processed_long.index)
+    knn_data_processed_long.index = pd.to_datetime(knn_data_processed_long.index, utc=True)
     knn_data_processed_long.sort_index(inplace=True)
 
     power_data = data_pre_processed[["power"]]
-    power_data.index = data_pre_processed.index.tz_localize(None)
     power_data.loc[knn_data_processed_long.index, "power"] = knn_data_processed_long["power"]
 
     if user_type == "consumer":
         data_final = power_data
+        data_final["impEnergy"] = data["impEnergy"]
+        data_final["expEnergy"] = data["expEnergy"]
+        data_final["productionPower"] = data["productionPower"]
+        data_final["productionEnergy"] = data["productionEnergy"]
     else:
-        # TODO Implementare modello lineare con irradianza per ricostruire la productionPower
-        data_final = data
+        weather_data = pd.read_csv(os.path.join(PROJECT_ROOT, "data", "weather", "anguillara.csv"))
+        weather_data["timestamp"] = pd.to_datetime(weather_data["timestamp"])
+        data_model = pd.merge(data["productionPower"], weather_data, left_index=True, right_on="timestamp", how="right")
+        data_model.set_index("timestamp", inplace=True)
+
+        missing_values = data_model[data_model["productionPower"].isnull()].index
+        data_to_reconstruct = data_model.loc[missing_values]
+
+        data_model.dropna(subset=["productionPower"], inplace=True)
+
+        model = LinearRegression()
+        model.fit(data_model[["ghi"]], data_model["productionPower"])
+
+        y_true = data_model["productionPower"]
+        y_pred = model.predict(data_model[["ghi"]])
+        r2 = r2_score(y_true, y_pred)
+        mae = mean_absolute_error(y_true, y_pred)
+        metrics = {"R2": r2, "MAE": mae}
+
+        data_to_reconstruct["productionPower"] = model.predict(data_to_reconstruct[["ghi"]])
+
+        pv_data = pd.concat([data_model, data_to_reconstruct])[['productionPower']]
+        pv_data.sort_index(inplace=True)
+        data_final = pd.merge(power_data, pv_data, left_index=True, right_index=True, how="left")
+        data_final.iloc[0, 1] = 0
+
+        data_final["impEnergy"] = data["impEnergy"]
+        data_final["expEnergy"] = data["expEnergy"]
+        data_final["productionEnergy"] = data["productionEnergy"]
 
     data_final.reset_index(inplace=True, names=['timestamp'])
-    return data_final
 
-
-if __name__ == "__main__":
-    from src.building import Building
-    import plotly.graph_objs as go
-    DU_8 = Building("08f2fc03-ce0b-4cd6-ab25-8b3906feb858", get_data_mode="offline")
-
-    data_cleaned = pre_process(DU_8.energy_meter.energy_meter_data.copy(), user_type=DU_8.building_info["user_type"])
-
-    fig = go.Figure()
-    fig.add_trace(
-        go.Scatter(x=data_cleaned["timestamp"], y=data_cleaned["power"], mode='lines', name='Cleaned'))
-    fig.add_trace(
-        go.Scatter(x=DU_8.energy_meter.energy_meter_data["timestamp"], y=DU_8.energy_meter.energy_meter_data["power"],
-                   mode='lines', name='Raw'))
-    fig.update_layout(
-        yaxis_title="Power [Wh]",
-        xaxis_title="Time",
-        title="DU 8"
-    )
-    fig.update_layout(legend=dict(
-        orientation="h",
-        yanchor="bottom",
-        y=1.02,
-        xanchor="right",
-        x=1
-    ))
-    fig.show()
+    return data_final, metrics
