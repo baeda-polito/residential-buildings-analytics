@@ -74,20 +74,28 @@ def pre_process(data: pd.DataFrame, user_type: str):
     power_data = data_pre_processed[["power"]]
     power_data.loc[knn_data_processed_long.index, "power"] = knn_data_processed_long["power"]
 
+    weather_data = pd.read_csv(os.path.join(PROJECT_ROOT, "data", "weather", "anguillara.csv"))
+    weather_data["timestamp"] = pd.to_datetime(weather_data["timestamp"])
+
     if user_type == "consumer":
         data_final = power_data
         data_final["impEnergy"] = data["impEnergy"]
         data_final["expEnergy"] = data["expEnergy"]
-        data_final["productionPower"] = data["productionPower"]
+        data_final["productionPower"] = 0
         data_final["productionEnergy"] = data["productionEnergy"]
+
+        index_diff = data_final.index.difference(weather_data["timestamp"])
+        data_final.loc[index_diff, "productionPower"] = np.nan
+
     else:
         weather_data = pd.read_csv(os.path.join(PROJECT_ROOT, "data", "weather", "anguillara.csv"))
         weather_data["timestamp"] = pd.to_datetime(weather_data["timestamp"])
-        data_model = pd.merge(data["productionPower"], weather_data, left_index=True, right_on="timestamp", how="right")
+        data_model = pd.merge(data, weather_data, left_index=True, right_on="timestamp", how="right")
         data_model.set_index("timestamp", inplace=True)
 
-        missing_values = data_model[data_model["productionPower"].isnull()].index
-        data_to_reconstruct = data_model.loc[missing_values]
+        missing_values = data_model["productionPower"].isnull()
+        index_not_phyisical = data_model["productionPower"] < - data_model["power"]
+        data_to_reconstruct = data_model.loc[missing_values | index_not_phyisical]
 
         data_model.dropna(subset=["productionPower"], inplace=True)
 

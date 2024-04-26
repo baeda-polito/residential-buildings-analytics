@@ -3,6 +3,7 @@ from src.pre_processing import pre_process
 from settings import PROJECT_ROOT
 import os
 import pandas as pd
+import numpy as np
 from datetime import datetime, timedelta
 import warnings
 
@@ -31,6 +32,7 @@ class Building:
         self.get_building_info()
         self.energy_meter = EnergyMeter(uuid, get_data_mode)
         self.energy_meter.pre_process_energy_data(self.building_info["user_type"])
+        self.energy_meter.define_load_components()
 
     def get_building_info(self):
         """
@@ -68,6 +70,7 @@ class EnergyMeter:
         self.energy_meter_data = None
         self.energy_meter_data_cleaned = None
         self.metrics_pv = None
+        self.data = None
         self.get_energy_meter_info(building_id)
         self.set_data(building_id, mode)
 
@@ -150,6 +153,29 @@ class EnergyMeter:
         self.energy_meter_data_cleaned = pre_procesing_results[0]
         self.metrics_pv = pre_procesing_results[1]
 
+    def define_load_components(self):
+        data = self.energy_meter_data_cleaned.copy()
+        data.dropna(inplace=True, subset=["productionPower", "power"])
+
+        day_groups = data.groupby(data["timestamp"].dt.date)
+
+        for date, day in day_groups:
+            if len(day) < 96:
+                data.drop(day.index, inplace=True)
+
+        load = np.where(data["power"] < 0, data["productionPower"] - abs(data["power"]),
+                        data["productionPower"] + data["power"])
+
+        load[load < 0] = np.nan
+        load = pd.Series(load).interpolate(method="linear", limit_direction="both")
+
+        timestamp = data["timestamp"].reset_index(drop=True)
+        net = data["power"].reset_index(drop=True)
+        production = data["productionPower"].reset_index(drop=True)
+
+        self.data = pd.DataFrame({"timestamp": timestamp, "Load": load, "Net": net, "Production": production})
+        self.data.dropna(inplace=True)
+
 
 def load_anguillara(mode="offline"):
 
@@ -165,3 +191,7 @@ def load_anguillara(mode="offline"):
     DU_10 = Building("4ef8599c-2c4b-433e-94c8-ca48e23a5a07", get_data_mode=mode)
 
     return [DU_1, DU_2, DU_3, DU_4, DU_5, DU_6, DU_7, DU_8, DU_9, DU_10]
+
+
+if __name__ == "__main__":
+    load_anguillara()
