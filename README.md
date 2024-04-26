@@ -34,3 +34,9 @@ Questa repository contiene il codice sviluppato per il contratto di ricerca tra 
     ```bash
     pip install -r requirements.txt
     ```
+
+### API
+
+I dati utilizzati all'interno della repository si ottengono tramite API della piattaforma [DHOMUS](https://www.smarthome.enea.it/).
+Le API, contenute negli script `smarthome.py` (piattaforma DHOMUS) e `weather.py` (Solcast e Wundergound), sono disponibili anche su Postman, al seguente [link](https://enea-2023.postman.co/workspace/ENEA2023~2db199d8-7a21-4232-805a-a3580f7d87be/overview) (se non si ha l'accesso richiedere a *rocco.giudice@polito.it*).
+Ogni settimana è necessario rigenerare il bearer token della piattaforma DHOMUS, per farlo è necessario eseguire la POST **auth** nella raccolta *Authorization*. ([Link](https://apio.notion.site/Integrazione-API-Read-Telemetry-Dhomus-6b1f4afc145a43ba854a303c24cc092b) alla documentazione ENEA sulle API).
