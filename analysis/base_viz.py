@@ -1,6 +1,8 @@
-from src.building import load_anguillara
+import os
 import pandas as pd
 import matplotlib.pyplot as plt
+from src.building import load_anguillara
+from settings import PROJECT_ROOT
 
 
 building_list = load_anguillara()
@@ -14,7 +16,7 @@ for building in building_list:
     data.loc[data["weekday"] == 6, "day_type"] = "Sunday"
     data["hour"] = data["timestamp"].dt.strftime("%H:%M")
 
-    fig, ax = plt.subplots(figsize=(12, 5), ncols=3, nrows=1)
+    fig, ax = plt.subplots(figsize=(12, 5), ncols=3, nrows=1, sharey='all')
     legend_handles = []
     hour_labels = data["hour"].iloc[:95:4*4]
     groups = data.groupby("day_type")
@@ -22,7 +24,7 @@ for building in building_list:
     for i, (name, group) in enumerate(groups):
         axes = ax[i]
         day_groups = group.groupby(group["timestamp"].dt.date)
-        centroid = group.groupby("hour")["Load"].median()
+        centroid = group.groupby("hour")["Load"].mean()
         for date, day in day_groups:
             load_profile_line, = axes.plot(day["hour"], day["Load"], color="grey", alpha=0.2, label="Load profile")
             axes.set_title(name)
@@ -35,20 +37,25 @@ for building in building_list:
         legend_handles.append(load_profile_line)
         legend_handles.append(centroid_line)
 
-    plt.suptitle(f"Daily load profiles for {building.building_info['name']}", fontsize=16)
-    legend = fig.legend(legend_handles, ["Load profile", "Centroid"], loc="lower center", bbox_to_anchor=(0.5, 0.01), fontsize=12, ncol=2, fancybox=True, shadow=True)
+    plt.suptitle(f"Daily load profiles for {building.building_info['name']} ({building.building_info['user_type']})",
+                 fontsize=16)
+    legend = fig.legend(legend_handles, ["Load profile", "Centroid"], loc="lower center", bbox_to_anchor=(0.5, 0.01),
+                        fontsize=12, ncol=2, fancybox=True, shadow=True)
     plt.tight_layout(rect=(0, 0.08, 1, 0.98))
+    plt.savefig(os.path.join(PROJECT_ROOT, "figures", "load_profiles", f"{building.building_info['id']}.png"))
     plt.show()
     plt.close(fig)
 
 
 for building in building_list:
     data = building.energy_meter.data.copy()
+    time_range = pd.date_range(start="2024-03-01T00:00:00Z", end=data["timestamp"].max().strftime('%Y-%m-%dT%H:%M:%SZ'), freq="15min")
+    data = data.merge(pd.DataFrame(time_range, columns=["timestamp"]), on="timestamp", how="right")
     data["timestamp"] = pd.to_datetime(data["timestamp"])
     data["date"] = data["timestamp"].dt.date
     data["hour"] = data["timestamp"].dt.strftime("%H:%M")
 
-    data_pivot = data.pivot_table(index="date", columns="hour", values="Load")
+    data_pivot = data.pivot_table(index="date", columns="hour", values="Load", dropna=False)
 
     fig, ax = plt.subplots(figsize=(10, 8))
     im = ax.imshow(data_pivot, cmap="Spectral_r")
@@ -60,7 +67,9 @@ for building in building_list:
     ax.set_ylabel("Date", fontsize=12)
     cbar = ax.figure.colorbar(im, ax=ax, orientation="horizontal", pad=0.1, shrink=0.5)
     cbar.set_label("Power (W)", fontsize=12)
-    plt.title(f"Carpet plot for {building.building_info['name']}", fontsize=16)
+    plt.title(f"Carpet plot for {building.building_info['name']} ({building.building_info['user_type']})",
+              fontsize=16)
     plt.tight_layout()
+    plt.savefig(os.path.join(PROJECT_ROOT, "figures", "carpet_plot", f"{building.building_info['id']}.png"))
     plt.show()
     plt.close(fig)
