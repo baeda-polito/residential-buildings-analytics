@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 from src.building import load_anguillara
 from settings import PROJECT_ROOT
@@ -70,6 +71,58 @@ for building in building_list:
     plt.title(f"Carpet plot for {building.building_info['name']} ({building.building_info['user_type']})",
               fontsize=16)
     plt.tight_layout()
-    plt.savefig(os.path.join(PROJECT_ROOT, "figures", "carpet_plot", f"{building.building_info['id']}.png"))
+    plt.savefig(os.path.join(PROJECT_ROOT, "figures", "carpet_plot", f"{building.building_info['id']}_cleaned.png"))
     plt.show()
     plt.close(fig)
+
+time_range = pd.date_range(start="2024-03-01T00:00:00Z", end=data["timestamp"].max().strftime('%Y-%m-%dT%H:%M:%SZ'), freq="15min")
+for building in building_list:
+    data = building.energy_meter.energy_meter_data.copy()
+    data["timestamp"] = pd.to_datetime(data["timestamp"])
+    data = data.merge(pd.DataFrame(time_range, columns=["timestamp"]), on="timestamp", how="right")
+    data["timestamp"] = pd.to_datetime(data["timestamp"])
+    data["date"] = data["timestamp"].dt.date
+    data["hour"] = data["timestamp"].dt.strftime("%H:%M")
+    if building.building_info["user_type"] == "consumer":
+        data["productionPower"] = 0
+    data["Load"] = np.where(data["power"] < 0, data["productionPower"] - abs(data["power"]),
+                        data["productionPower"] + data["power"])
+    data["Load"][data["Load"] < 0] = np.nan
+    data_pivot = data.pivot_table(index="date", columns="hour", values="Load", dropna=False)
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+    im = ax.imshow(data_pivot, cmap="Spectral_r")
+    ax.set_xticks(range(0, 95, 4 * 4))
+    ax.set_xticklabels(data["hour"].iloc[:95:4*4], rotation=0, fontsize=10, ha="center")
+    ax.set_yticks(range(0, len(data_pivot), 4))
+    ax.set_yticklabels(data_pivot.index[::4], fontsize=10)
+    ax.set_xlabel("Hour of the day", fontsize=12)
+    ax.set_ylabel("Date", fontsize=12)
+    cbar = ax.figure.colorbar(im, ax=ax, orientation="horizontal", pad=0.1, shrink=0.5)
+    cbar.set_label("Power (W)", fontsize=12)
+    plt.title(f"Carpet plot for {building.building_info['name']} ({building.building_info['user_type']})",
+              fontsize=16)
+    plt.tight_layout()
+    plt.savefig(os.path.join(PROJECT_ROOT, "figures", "carpet_plot", f"{building.building_info['id']}_raw.png"))
+    plt.show()
+    plt.close(fig)
+
+
+for building in building_list:
+    data = building.energy_meter.energy_meter_data.copy()
+    data["timestamp"] = pd.to_datetime(data["timestamp"])
+
+    if building.building_info["user_type"] != "consumer":
+        fig, ax = plt.subplots(figsize=(15, 5))
+        ax.plot(data["timestamp"], data["power"], color="blue", label="Power")
+        ax.plot(data["timestamp"], data["impEnergy"], color="green", label="Imported energy")
+        ax.plot(data["timestamp"], data["expEnergy"], color="red", label="Exported energy")
+        ax.set_xlabel("Date", fontsize=12)
+        ax.set_ylabel("[Wh]", fontsize=12)
+        ax.set_xlim(data["timestamp"].min(), data["timestamp"].max())
+        ax.set_title(f"{building.building_info['name']} ({building.building_info['user_type']})", fontsize=18)
+        fig.legend(bbox_to_anchor=(0.5, 0), loc='lower center', fontsize=12, ncol=3, fancybox=True, shadow=True)
+        plt.tight_layout(rect=(0, 0.08, 1, 1))
+        plt.savefig(os.path.join(PROJECT_ROOT, "figures", "misc", f"{building.building_info['id']}_imp_exp.png"))
+        plt.show()
+        plt.close(fig)
