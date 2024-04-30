@@ -31,7 +31,7 @@ class Building:
         }
         self.get_building_info()
         self.energy_meter = EnergyMeter(uuid, get_data_mode)
-        self.energy_meter.pre_process_energy_data(self.building_info["user_type"])
+        self.energy_meter.pre_process_energy_data(self.building_info["user_type"], self.building_info["id"])
         self.energy_meter.define_load_components()
 
     def get_building_info(self):
@@ -144,12 +144,12 @@ class EnergyMeter:
         else:
             self.energy_meter_data = pd.read_csv(os.path.join(PROJECT_ROOT, "data", "energy_meter", f"{building_id}.csv"))
 
-    def pre_process_energy_data(self, user_type):
+    def pre_process_energy_data(self, user_type, user_id):
         """
         Preprocessa i dati del contatore di energia in base al tipo di utente
         """
         data = self.energy_meter_data.copy()
-        pre_procesing_results = pre_process(data, user_type)
+        pre_procesing_results = pre_process(data, user_type, user_id)
         self.energy_meter_data_cleaned = pre_procesing_results[0]
         self.metrics_pv = pre_procesing_results[1]
 

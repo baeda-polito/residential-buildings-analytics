@@ -2,12 +2,13 @@ import pandas as pd
 from sklearn.impute import KNNImputer
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error, r2_score
+import matplotlib.pyplot as plt
 import numpy as np
 import os
 from settings import PROJECT_ROOT
 
 
-def pre_process(data: pd.DataFrame, user_type: str):
+def pre_process(data: pd.DataFrame, user_type: str, user_id: str):
     """
     Pre-processa i dati di "power" e "productionPower". La potenza è pre-processata in due fasi: prima vengono interpolati
     i valore mancanti con un massimo di 4 valori consecutivi, poi viene utilizzato un algoritmo KNN per interpolare i
@@ -88,7 +89,7 @@ def pre_process(data: pd.DataFrame, user_type: str):
         data_final.loc[index_diff, "productionPower"] = np.nan
 
     else:
-        weather_data = pd.read_csv(os.path.join(PROJECT_ROOT, "data", "weather", "anguillara.csv"))
+        weather_data = pd.read_csv(os.path.join(PROJECT_ROOT, "data", "weather", "anguillara.csv")).iloc[:-1, :]
         weather_data["timestamp"] = pd.to_datetime(weather_data["timestamp"])
         data_model = pd.merge(data, weather_data, left_index=True, right_on="timestamp", how="right")
         data_model.set_index("timestamp", inplace=True)
@@ -98,6 +99,15 @@ def pre_process(data: pd.DataFrame, user_type: str):
         data_to_reconstruct = data_model.loc[missing_values | index_not_phyisical]
 
         data_model.dropna(subset=["productionPower"], inplace=True)
+        data_model = data_model[~index_not_phyisical]
+        data_model.loc[data_model["ghi"] == 0, "productionPower"] = 0
+
+        plt.scatter(data_model["ghi"], data_model["productionPower"])
+        plt.xlabel("Global Horizontal Irradiance [W/m2]")
+        plt.ylabel("Production Power [W]")
+        plt.title("Global Horizontal Irradiance vs Production Power")
+        plt.savefig(os.path.join(PROJECT_ROOT, "figures", "pv_pre_processing", f"{user_id}_data_model.png"))
+        plt.close()
 
         model = LinearRegression()
         model.fit(data_model[["ghi"]], data_model["productionPower"])
@@ -109,6 +119,8 @@ def pre_process(data: pd.DataFrame, user_type: str):
         metrics = {"R2": r2, "MAE": mae}
 
         data_to_reconstruct["productionPower"] = model.predict(data_to_reconstruct[["ghi"]])
+        data_to_reconstruct.loc[data_to_reconstruct["productionPower"] < 0, "productionPower"] = 0
+        data_to_reconstruct.loc[data_to_reconstruct["ghi"] == 0, "productionPower"] = 0
 
         pv_data = pd.concat([data_model, data_to_reconstruct])[['productionPower']]
         pv_data.sort_index(inplace=True)
