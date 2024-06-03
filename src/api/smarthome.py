@@ -84,7 +84,10 @@ def get_data_device(device_id: str, properties: list, time_to: str, time_from: s
     params = [("deviceId", device_id), ("timeTo", time_to), ("timeFrom", time_from)]
 
     for prop, func in zip(properties, aggregation_function):
-        name_param = f"{prop}_{func}_{aggregation_period}"
+        if "Avg15" not in prop:
+            name_param = f"{prop}_{func}_{aggregation_period}"
+        else:
+            name_param = f"{prop}_{func}"
         params.append(("name[]", name_param))
 
     querystring = urllib.parse.urlencode(params)

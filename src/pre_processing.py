@@ -100,38 +100,41 @@ def pre_process(data: pd.DataFrame, user_type: str, user_id: str):
         index_not_phyisical = data_model["productionPower"] < - data_model["power"]
         data_to_reconstruct = data_model.loc[missing_values | index_not_phyisical]
 
-        data_model.dropna(subset=["productionPower"], inplace=True)
-        data_model = data_model[~index_not_phyisical]
-        data_model.loc[data_model["ghi"] == 0, "productionPower"] = 0
+        if len(data_to_reconstruct) > 0.9 * len(data_model):
+            data_final = pd.DataFrame(columns=["power", "impEnergy", "expEnergy", "productionPower", "productionEnergy"])
+        else:
+            data_model.dropna(subset=["productionPower"], inplace=True)
+            data_model = data_model[~index_not_phyisical]
+            data_model.loc[data_model["ghi"] == 0, "productionPower"] = 0
 
-        plt.scatter(data_model["ghi"], data_model["productionPower"])
-        plt.xlabel("Global Horizontal Irradiance [W/m2]")
-        plt.ylabel("Production Power [W]")
-        plt.title("Global Horizontal Irradiance vs Production Power")
-        plt.savefig(os.path.join(PROJECT_ROOT, "figures", "pv_pre_processing", f"{user_id}_data_model.png"))
-        plt.close()
+            plt.scatter(data_model["ghi"], data_model["productionPower"])
+            plt.xlabel("Global Horizontal Irradiance [W/m2]")
+            plt.ylabel("Production Power [W]")
+            plt.title("Global Horizontal Irradiance vs Production Power")
+            plt.savefig(os.path.join(PROJECT_ROOT, "figures", "pv_pre_processing", f"{user_id}_data_model.png"))
+            plt.close()
 
-        model = LinearRegression()
-        model.fit(data_model[["ghi"]], data_model["productionPower"])
+            model = LinearRegression()
+            model.fit(data_model[["ghi"]], data_model["productionPower"])
 
-        y_true = data_model["productionPower"]
-        y_pred = model.predict(data_model[["ghi"]])
-        r2 = r2_score(y_true, y_pred)
-        mae = mean_absolute_error(y_true, y_pred)
-        metrics = {"R2": r2, "MAE": mae}
+            y_true = data_model["productionPower"]
+            y_pred = model.predict(data_model[["ghi"]])
+            r2 = r2_score(y_true, y_pred)
+            mae = mean_absolute_error(y_true, y_pred)
+            metrics = {"R2": r2, "MAE": mae}
 
-        data_to_reconstruct["productionPower"] = model.predict(data_to_reconstruct[["ghi"]])
-        data_to_reconstruct.loc[data_to_reconstruct["productionPower"] < 0, "productionPower"] = 0
-        data_to_reconstruct.loc[data_to_reconstruct["ghi"] == 0, "productionPower"] = 0
+            data_to_reconstruct["productionPower"] = model.predict(data_to_reconstruct[["ghi"]])
+            data_to_reconstruct.loc[data_to_reconstruct["productionPower"] < 0, "productionPower"] = 0
+            data_to_reconstruct.loc[data_to_reconstruct["ghi"] == 0, "productionPower"] = 0
 
-        pv_data = pd.concat([data_model, data_to_reconstruct])[['productionPower']]
-        pv_data.sort_index(inplace=True)
-        data_final = pd.merge(power_data, pv_data, left_index=True, right_index=True, how="left")
-        data_final.iloc[0, 1] = 0
+            pv_data = pd.concat([data_model, data_to_reconstruct])[['productionPower']]
+            pv_data.sort_index(inplace=True)
+            data_final = pd.merge(power_data, pv_data, left_index=True, right_index=True, how="left")
+            data_final.iloc[0, 1] = 0
 
-        data_final["impEnergy"] = data["impEnergy"]
-        data_final["expEnergy"] = data["expEnergy"]
-        data_final["productionEnergy"] = data["productionEnergy"]
+            data_final["impEnergy"] = data["impEnergy"]
+            data_final["expEnergy"] = data["expEnergy"]
+            data_final["productionEnergy"] = data["productionEnergy"]
 
     data_final.reset_index(inplace=True, names=['timestamp'])
 

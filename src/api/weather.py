@@ -60,5 +60,5 @@ def get_historical_data_solcast(start_date: str, lat=42.0837, lon=12.283):
 
 
 if __name__ == "__main__":
-    df = get_historical_data_solcast("2024-03-01T00:00:00Z")
-    df.to_csv(os.path.join(PROJECT_ROOT, "data", "weather", "anguillara_2024-03.csv"), index=False)
+    df = get_historical_data_solcast("2024-05-01T00:00:00Z")
+    df.to_csv(os.path.join(PROJECT_ROOT, "data", "weather", "anguillara_2024-05.csv"), index=False)
