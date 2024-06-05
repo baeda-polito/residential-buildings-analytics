@@ -2,11 +2,11 @@ import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from src.building import load_anguillara
+from src.building import load_anguillara, load_garda
 from settings import PROJECT_ROOT
 
 
-building_list = load_anguillara()
+building_list = load_garda()
 
 for building in building_list:
     data = building.energy_meter.data.copy()
@@ -25,9 +25,9 @@ for building in building_list:
     for i, (name, group) in enumerate(groups):
         axes = ax[i]
         day_groups = group.groupby(group["timestamp"].dt.date)
-        centroid = group.groupby("hour")["Load"].mean()
+        centroid = group.groupby("hour")["Net"].mean()
         for date, day in day_groups:
-            load_profile_line, = axes.plot(day["hour"], day["Load"], color="grey", alpha=0.2, label="Load profile")
+            load_profile_line, = axes.plot(day["hour"], day["Net"], color="grey", alpha=0.2, label="Load profile")
             axes.set_title(name)
             axes.set_xlabel("Hour of the day", fontsize=12)
             axes.set_ylabel("Power (W)", fontsize=12)
@@ -50,6 +50,7 @@ for building in building_list:
 
 for building in building_list:
     data = building.energy_meter.data.copy()
+    data["timestamp"] = pd.to_datetime(data["timestamp"])
     time_range = pd.date_range(start="2024-03-01T00:00:00Z", end=data["timestamp"].max().strftime('%Y-%m-%dT%H:%M:%SZ'), freq="15min")
     data = data.merge(pd.DataFrame(time_range, columns=["timestamp"]), on="timestamp", how="right")
     data["timestamp"] = pd.to_datetime(data["timestamp"])
@@ -75,10 +76,11 @@ for building in building_list:
     plt.show()
     plt.close(fig)
 
-time_range = pd.date_range(start="2024-03-01T00:00:00Z", end=data["timestamp"].max().strftime('%Y-%m-%dT%H:%M:%SZ'), freq="15min")
 for building in building_list:
     data = building.energy_meter.energy_meter_data.copy()
     data["timestamp"] = pd.to_datetime(data["timestamp"])
+    time_range = pd.date_range(start="2024-03-01T00:00:00Z", end=data["timestamp"].max().strftime('%Y-%m-%dT%H:%M:%SZ'),
+                               freq="15min")
     data = data.merge(pd.DataFrame(time_range, columns=["timestamp"]), on="timestamp", how="right")
     data["timestamp"] = pd.to_datetime(data["timestamp"])
     data["date"] = data["timestamp"].dt.date
