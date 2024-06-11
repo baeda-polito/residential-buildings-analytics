@@ -1,79 +1,109 @@
-from building import load_anguillara
+from building import load_anguillara, load_garda
+from settings import PROJECT_ROOT
+import shape_factor
 import pandas as pd
+import os
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
-import matplotlib.pyplot as plt
-import seaborn as sns
 
-building_list = load_anguillara()
+global building_list
 
-# Obtain an unique dataframe appending all the load profiles for each consumer
+if __name__ == "__main__":
+    aggregate = "garda"
 
-df_dict = {}
+    if aggregate == "anguillara":
+        building_list = load_anguillara()
+    elif aggregate == "garda":
+        building_list = load_garda()
 
-for building in building_list:
-    if building.building_info["user_type"] == "consumer":
+    building_sf_dict = {}
+
+    for building in building_list:
         data = building.energy_meter.data.copy()
-        data["timestamp"] = pd.to_datetime(data["timestamp"])
         data.set_index("timestamp", inplace=True)
-        data = data.resample("H").mean()
-        data_pivot = data.pivot_table(index=data.index.date, columns=data.index.strftime("%H:%M"), values="Net", dropna=True)
-        # Normalize the data using Z-score
-        data_pivot = (data_pivot - data_pivot.mean()) / data_pivot.std()
-        data_pivot["building"] = building.building_info["name"]
-        # Divide into weekdays and weekends
-        data_pivot.index = pd.to_datetime(data_pivot.index)
-        data_pivot["weekday"] = data_pivot.index.weekday
-        data_pivot["day_type"] = "Weekday"
-        data_pivot.loc[data_pivot["weekday"] >= 5, "day_type"] = "Weekend"
-        data_pivot.drop(columns=["weekday"], inplace=True)
-        df_dict[building.building_info["name"]] = data_pivot
+        data = data["Net"].clip(lower=0)
+        data = data.resample("1H").mean()
+        mean_max = shape_factor.sf_mean_max(data)
+        min_max = shape_factor.sf_min_max(data)
+        min_mean = shape_factor.sf_min_mean(data)
+        daytime_mean = shape_factor.sf_daytime_mean(data)
+        daytime_max = shape_factor.sf_daytime_max(data)
+        daytime_min_mean = shape_factor.sf_daytime_min_mean(data)
+        nightime_mean = shape_factor.sf_nightime_mean(data)
+        nightime_max = shape_factor.sf_nightime_max(data)
+        nightime_min_mean = shape_factor.sf_nightime_min_mean(data)
+        afternoon_mean = shape_factor.sf_afternoon_mean(data)
+        afternoon_max = shape_factor.sf_afternoon_max(data)
+        afternoon_min_mean = shape_factor.sf_afternoon_min_mean(data)
+        peak_load = shape_factor.peakload(data)
+        peak_period = shape_factor.peak_period(data, peak_load)
 
-df = pd.concat(df_dict.values())
+        df_sf = pd.concat([mean_max, min_max, min_mean, daytime_mean, daytime_max, daytime_min_mean, nightime_mean,
+                           nightime_max, nightime_min_mean, afternoon_mean, afternoon_max, afternoon_min_mean,
+                           peak_period], axis=1)
+        df_sf.columns = ["mean_max", "min_max", "min_mean", "daytime_mean", "daytime_max", "daytime_min_mean",
+                         "nightime_mean", "nightime_max", "nightime_min_mean", "afternoon_mean", "afternoon_max",
+                         "afternoon_min_mean", "peak_night", "pick_morning", "peak_mid-day", "peak_evening"]
+        df_sf.dropna(inplace=True)
+        df_sf["building_name"] = building.building_info["name"]
+        df_sf["user_type"] = building.building_info["user_type"]
+        building_sf_dict[building.building_info["name"]] = df_sf
 
-kmeans = KMeans(n_clusters=10, random_state=0)
-kmeans.fit(df[df.columns[:23]])
-df["cluster"] = kmeans.labels_
+    df_sf_total = pd.concat(building_sf_dict.values())
 
-# Plot the load profiles for each cluster
+    """
+    Consumer clustering
+    """
 
-fig, ax = plt.subplots(figsize=(12, 5), ncols=5, nrows=2)
-hour_labels = df.columns[:23:4]
+    df_sf_total_norm = df_sf_total.copy()
+    df_sf_total_norm = df_sf_total_norm[df_sf_total_norm["user_type"] == "consumer"]
+    df_sf_total_reset = df_sf_total_norm.reset_index()
+    df_sf_total_reset.iloc[:, 1:14] = (df_sf_total_reset.iloc[:, 1:14] - df_sf_total_reset.iloc[:, 1:14].min()) / (
+                df_sf_total_reset.iloc[:, 1:14].max() - df_sf_total_reset.iloc[:, 1:14].min())
+    df_sf_total_norm = df_sf_total_reset.set_index("index")
 
-for i in range(10):
-    axes = ax[i // 5, i % 5]
-    cluster = df[df["cluster"] == i].drop(columns=["cluster", "building", "day_type"])
-    centroid = cluster.mean()
-    # Take also the first and third quartile
-    q1 = cluster.quantile(0.25)
-    q3 = cluster.quantile(0.75)
-    for idx, row in cluster.iterrows():
-        load_profile_line, = axes.plot(row.index, row.values, color="grey", alpha=0.2)
-    centroid_line, = axes.plot(centroid.index, centroid.values, color="red", label="Centroid")
-    q1_line = axes.plot(q1.index, q1.values, color="blue", linestyle="--", label="Q1")
-    q3_line = axes.plot(q3.index, q3.values, color="green", linestyle="--", label="Q3")
-    axes.set_title(f"Cluster {i}")
-    axes.set_xlabel("Hour of the day", fontsize=12)
-    axes.set_ylabel("Power (kW)", fontsize=12)
-    plt.xticks()
-    axes.set_xticks(range(0, 23, 4))
+    silhouette_scores = []
+    for n_clusters in range(2, 6):
+        kmeans = KMeans(n_clusters=n_clusters, random_state=0)
+        kmeans.fit(df_sf_total_norm.iloc[:, :-2])
+        silhouette_scores.append(silhouette_score(df_sf_total_norm.iloc[:, :-2], kmeans.labels_))
 
-# Extract the legend from the last subplot
-handles, labels = axes.get_legend_handles_labels()
-fig.legend(handles, labels, loc="lower center", bbox_to_anchor=(0.5, 0.01), fontsize=12, ncol=5, fancybox=True, shadow=True)
-plt.tight_layout(rect=(0, 0.08, 1, 0.98))
-plt.show()
+    n_clusters = silhouette_scores.index(max(silhouette_scores)) + 2
 
-# Calculate the percentage of load profiles as weekday and weekend in each cluster
-day_type_count = df.groupby(["cluster", "day_type"]).size().unstack().fillna(0).apply(lambda x: x / x.sum(), axis=1)
-# Stacked bar plot of the day_type_count
-day_type_count.plot(kind="bar", stacked=True)
-plt.show()
+    kmeans = KMeans(n_clusters=n_clusters, random_state=0)
+    kmeans.fit(df_sf_total_norm.iloc[:, :-2])
+    df_sf_total_norm["cluster"] = kmeans.labels_
 
+    df_sf_consumer = df_sf_total_norm.copy()
 
-cluster_counts = df["cluster"].value_counts(normalize=True).sort_index()
+    """
+    Clustering producer/prostormer
+    """
 
-# df = df.groupby("cluster").filter(lambda x: len(x) / len(df) > 0.05)
-building_cluster = df.groupby("building")["cluster"].value_counts(dropna=False).unstack(fill_value=0)
+    df_sf_total_norm = df_sf_total.copy()
+    df_sf_total_norm = df_sf_total_norm[df_sf_total_norm["user_type"] != "consumer"]
+    df_sf_total_reset = df_sf_total_norm.reset_index()
+    df_sf_total_reset.iloc[:, 1:14] = (df_sf_total_reset.iloc[:, 1:14] - df_sf_total_reset.iloc[:, 1:14].min()) / (
+                df_sf_total_reset.iloc[:, 1:14].max() - df_sf_total_reset.iloc[:, 1:14].min())
+    df_sf_total_norm = df_sf_total_reset.set_index("index")
 
-silhouette_score = silhouette_score(df[df.columns[:23]], kmeans.labels_)
+    silhouette_scores = []
+    for n_clusters in range(2, 6):
+        kmeans = KMeans(n_clusters=n_clusters, random_state=0)
+        kmeans.fit(df_sf_total_norm.iloc[:, :-2])
+        silhouette_scores.append(silhouette_score(df_sf_total_norm.iloc[:, :-2], kmeans.labels_))
+
+    n_clusters = silhouette_scores.index(max(silhouette_scores)) + 2
+
+    kmeans = KMeans(n_clusters=n_clusters, random_state=0)
+    kmeans.fit(df_sf_total_norm.iloc[:, :-2])
+    df_sf_total_norm["cluster"] = kmeans.labels_
+
+    df_sf_producer = df_sf_total_norm.copy()
+
+    df_sf_total = pd.concat([df_sf_consumer, df_sf_producer])
+    df_sf_total.reset_index(inplace=True, names=["date"])
+
+    df_sf_total[['date', 'building_name', "user_type", 'cluster']].to_csv(
+        os.path.join(PROJECT_ROOT, "results", f"cluster_{aggregate}.csv"),
+        index=False)
