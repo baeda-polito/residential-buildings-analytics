@@ -1,14 +1,18 @@
 import os
 import pandas as pd
-from src.building import load_anguillara
+from src.building import load_anguillara, load_garda
 from settings import PROJECT_ROOT
 
 
-def save_energy_data():
+def save_energy_data(aggregate="anguillara"):
 
-    building_list = load_anguillara(mode="online")
+    if aggregate == "anguillara":
+        building_list = load_anguillara(mode="online")
+    elif aggregate == "garda":
+        building_list = load_garda(mode="online")
 
     for building in building_list:
+        print(building)
         energy_meter = building.energy_meter.energy_meter_data
         energy_meter.to_csv(os.path.join(PROJECT_ROOT, "data", "energy_meter", f"{building.building_info['id']}.csv"),
                             index=False)
@@ -33,5 +37,5 @@ def save_weather_data(prefix="anguillara"):
 
 
 if __name__ == "__main__":
-    save_weather_data()
-    save_energy_data()
+    save_weather_data(prefix="garda")
+    save_energy_data(aggregate="garda")

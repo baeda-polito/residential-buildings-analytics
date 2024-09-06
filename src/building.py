@@ -17,6 +17,7 @@ class Building:
     :param get_data_mode: modalità di recupero dei dati, online o offline. Se online, i dati verranno scaricati dal
     portale di SmartHome, altrimenti verranno presi da un file csv nella cartella "data".
     """
+
     def __init__(self, uuid, get_data_mode="offline"):
         self.building_info = {
             "id": uuid,
@@ -29,37 +30,43 @@ class Building:
             "surface": None,
             "coordinates": None,
         }
-        self.get_building_info()
+        self.get_building_info(get_data_mode=get_data_mode)
         self.energy_meter = EnergyMeter(uuid, get_data_mode)
         self.energy_meter.pre_process_energy_data(self.building_info["user_type"], self.building_info["id"])
         self.energy_meter.define_load_components()
 
-    def get_building_info(self):
+    def get_building_info(self, get_data_mode="offline"):
         """
         Estrae le informazioni dell'edificio dal portale di SmartHome e le carica nell'attributo 'building_info'
         """
-        flag = 0
-        try:
-            plant_info = get_plant_info(self.building_info["id"])["plant"]
-            flag = 1
-        except Exception as e:
-            print(f"Is not possible to retrieve information for building {self.building_info['id']}")
 
-        if flag == 1:
-            self.building_info["name"] = plant_info["name"]
-            self.building_info["user_type"] = plant_info["metadata"]["userType"]
-            self.building_info["persons"] = plant_info["metadata"]["tipologia_utenza"]["person_number"]
-            self.building_info["occupancy"] = plant_info["metadata"]["tipologia_utenza"]["time_person_number"]
-            self.building_info["rated_power"] = plant_info["metadata"]["tipologia_utenza"]["contract"]["power"]
-            self.building_info["tariff"] = plant_info["metadata"]["tipologia_utenza"]["contract"]["price"]
-            self.building_info["surface"] = plant_info["metadata"]["surface"]
-            self.building_info["coordinates"] = plant_info["metadata"]["address"]["coordinates"]
+        if get_data_mode == "offline":
+            with open(os.path.join(PROJECT_ROOT, "data", "metadata", f"{self.building_info['id']}.json"), "r") as f:
+                self.building_info = json.load(f)
+        else:
+            flag = 0
+            try:
+                plant_info = get_plant_info(self.building_info["id"])["plant"]
+                flag = 1
+            except Exception as e:
+                print(f"Is not possible to retrieve information for building {self.building_info['id']}")
+
+            if flag == 1:
+                self.building_info["name"] = plant_info["name"]
+                self.building_info["user_type"] = plant_info["metadata"]["userType"]
+                self.building_info["persons"] = plant_info["metadata"]["tipologia_utenza"]["person_number"]
+                self.building_info["occupancy"] = plant_info["metadata"]["tipologia_utenza"]["time_person_number"]
+                self.building_info["rated_power"] = plant_info["metadata"]["tipologia_utenza"]["contract"]["power"]
+                self.building_info["tariff"] = plant_info["metadata"]["tipologia_utenza"]["contract"]["price"]
+                self.building_info["surface"] = plant_info["metadata"]["surface"]
+                self.building_info["coordinates"] = plant_info["metadata"]["address"]["coordinates"]
 
 
 class EnergyMeter:
     """
     Classe che contiene le informazioni utili per un contatore di energia e i suoi dati.
     """
+
     def __init__(self, building_id, mode="offline"):
         self.energy_meter_info = {
             "id": None,
@@ -123,7 +130,8 @@ class EnergyMeter:
                 df[new_key] = df[new_key].astype(float)
                 df_list[new_key] = df
 
-            df_energy_meter = pd.concat([df.set_index('timestamp') for df in df_list.values() if not df.empty], axis=1).sort_values('timestamp')
+            df_energy_meter = pd.concat([df.set_index('timestamp') for df in df_list.values() if not df.empty],
+                                        axis=1).sort_values('timestamp')
 
             timestamp_range = pd.date_range(start=time_from, end=time_to, freq='15min')
             df_energy_meter = df_energy_meter.reindex(timestamp_range)
@@ -140,9 +148,11 @@ class EnergyMeter:
         :param mode: online od offline
         """
         if mode == "online":
+            print(f"Building {building_id}")
             self.energy_meter_data = self.get_data(time_from="2024-03-01T00:00:00Z")
         else:
-            self.energy_meter_data = pd.read_csv(os.path.join(PROJECT_ROOT, "data", "energy_meter", f"{building_id}.csv"))
+            self.energy_meter_data = pd.read_csv(
+                os.path.join(PROJECT_ROOT, "data", "energy_meter", f"{building_id}.csv"))
 
     def pre_process_energy_data(self, user_type, user_id):
         """
@@ -181,10 +191,8 @@ class EnergyMeter:
 
 
 def load_anguillara(mode="offline"):
-
     DU_1 = Building("7436df46-294b-4c97-bd1b-8aaa3aed97c5", get_data_mode=mode)
     DU_2 = Building("80c3bedd-8c41-450c-ae52-1864b9ace7aa", get_data_mode=mode)
-    # DU_3 = Building("b8296a26-2a08-417b-92d3-41e37f6a956e", get_data_mode=mode)
     DU_4 = Building("d93552c8-e7f6-45bb-b382-bd4a2b969502", get_data_mode=mode)
     DU_5 = Building("b87be67b-8133-4b7f-a045-c06da08b5416", get_data_mode=mode)
     DU_6 = Building("9a3386b3-017c-4848-ac6d-a24bf7f36077", get_data_mode=mode)
@@ -193,29 +201,23 @@ def load_anguillara(mode="offline"):
     DU_9 = Building("3d956901-f5ea-4094-9c85-333cc68183d4", get_data_mode=mode)
     DU_10 = Building("4ef8599c-2c4b-433e-94c8-ca48e23a5a07", get_data_mode=mode)
 
-    return [DU_1, DU_2,
-            # DU_3,
-            DU_4, DU_5, DU_6, DU_7, DU_8, DU_9, DU_10]
+    return [DU_1, DU_2, DU_4, DU_5, DU_6, DU_7, DU_8, DU_9, DU_10]
+
 
 def load_garda(mode="offline"):
-    # DU_11 = Building("903a9b98-8c2c-49f9-a31d-9a398c4fafb3", get_data_mode=mode)
-    # DU_12 = Building("a99641a4-5da6-4922-a6ea-d578847a094d", get_data_mode=mode)
+    DU_11 = Building("903a9b98-8c2c-49f9-a31d-9a398c4fafb3", get_data_mode=mode)
+    DU_12 = Building("a99641a4-5da6-4922-a6ea-d578847a094d", get_data_mode=mode)
     DU_13 = Building("d91a0269-386f-4486-854d-a1e11405d97d", get_data_mode=mode)
     DU_14 = Building("cd2198a5-069a-4ea1-a118-fa0ef8d43005", get_data_mode=mode)
     DU_15 = Building("2785c76e-1f34-45f1-ab14-39da69957482", get_data_mode=mode)
     DU_16 = Building("8ae1b59c-a5af-4036-9469-db8a12ba1427", get_data_mode=mode)
-    # DU_17 = Building("12eefaba-1024-4883-97a1-719f3b8e2c96", get_data_mode=mode)
+    DU_17 = Building("12eefaba-1024-4883-97a1-719f3b8e2c96", get_data_mode=mode)
     DU_18 = Building("eaaa2a7f-9631-4869-b33a-fca820464b41", get_data_mode=mode)
-    # DU_19 = Building("0af9a404-635f-43d7-82bf-064981cb0145", get_data_mode=mode)
+    DU_19 = Building("0af9a404-635f-43d7-82bf-064981cb0145", get_data_mode=mode)
     DU_20 = Building("5b434307-b3ce-4580-86de-e0b74c8da2b8", get_data_mode=mode)
 
-    return [# DU_11, DU_12,
-        DU_13, DU_14, DU_15, DU_16,  # DU_17,
-        DU_18,
-        # DU_19,
-        DU_20]
+    return [DU_11, DU_12, DU_13, DU_14, DU_15, DU_16, DU_17, DU_18, DU_19, DU_20]
 
 
 if __name__ == "__main__":
-    anguillara = load_anguillara(mode="offline")
     garda = load_garda(mode="offline")
