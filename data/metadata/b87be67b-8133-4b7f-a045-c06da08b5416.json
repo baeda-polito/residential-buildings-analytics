@@ -1,1 +1,30 @@
-{"id": "b87be67b-8133-4b7f-a045-c06da08b5416", "name": "DU_5", "user_type": "consumer", "persons": 2, "occupancy": {"8-13": 1, "13-19": 1, "19-24": 2, "24-8": 2}, "rated_power": 3, "tariff": "", "surface": 110, "coordinates": [12.2830132, 42.0837101]}
+{
+  "id": "b87be67b-8133-4b7f-a045-c06da08b5416",
+  "name": "DU_5",
+  "user_type": "consumer",
+  "persons": 2,
+  "occupancy": {
+    "8-13": 1,
+    "13-19": 1,
+    "19-24": 2,
+    "24-8": 2
+  },
+  "rated_power": 3,
+  "tariff": "",
+  "surface": 50,
+  "coordinates": [
+    12.2830132,
+    42.0837101
+  ],
+    "ac": {
+    "n_ac": 2,
+    "type": "cooling"
+  },
+  "pv": {
+    "rated_power": null,
+    "tilt": null,
+    "azimuth": null,
+    "storage": null
+  },
+  "retrofit": 0
+}

@@ -1,1 +1,30 @@
-{"id": "d93552c8-e7f6-45bb-b382-bd4a2b969502", "name": "DU_4", "user_type": "prostormer", "persons": 2, "occupancy": {"8-13": 1, "13-19": 1, "19-24": 2, "24-8": 2}, "rated_power": 6, "tariff": "", "surface": 0, "coordinates": [12.2830132, 42.0837101]}
+{
+  "id": "d93552c8-e7f6-45bb-b382-bd4a2b969502",
+  "name": "DU_4",
+  "user_type": "prostormer",
+  "persons": 2,
+  "occupancy": {
+    "8-13": 0,
+    "13-19": 0,
+    "19-24": 2,
+    "24-8": 2
+  },
+  "rated_power": 6,
+  "tariff": "",
+  "surface": 0,
+  "coordinates": [
+    12.2830132,
+    42.0837101
+  ],
+    "ac": {
+    "n_ac": 3,
+    "type": "cooling"
+  },
+  "pv": {
+    "rated_power": 6,
+    "tilt": 29,
+    "azimuth": 35,
+    "storage": null
+  },
+  "retrofit": 1
+}

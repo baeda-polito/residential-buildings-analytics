@@ -1,1 +1,19 @@
-{"id": "0af9a404-635f-43d7-82bf-064981cb0145", "name": "DU_19", "user_type": "producer", "persons": 0, "occupancy": {"8-13": 0, "13-19": 0, "19-24": 0, "24-8": 0}, "rated_power": 6, "tariff": "", "surface": 0, "coordinates": [10.4845346, 45.4610389]}
+{
+  "id": "0af9a404-635f-43d7-82bf-064981cb0145",
+  "name": "DU_19",
+  "user_type": "producer",
+  "persons": 0,
+  "occupancy": {
+    "8-13": 0,
+    "13-19": 0,
+    "19-24": 0,
+    "24-8": 0
+  },
+  "rated_power": 6,
+  "tariff": "",
+  "surface": 0,
+  "coordinates": [
+    10.4845346,
+    45.4610389
+  ]
+}
