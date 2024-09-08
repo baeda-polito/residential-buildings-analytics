@@ -60,5 +60,11 @@ def get_historical_data_solcast(start_date: str, lat=42.0837, lon=12.283):
 
 
 if __name__ == "__main__":
+    lat_garda = 45.2756
+    lon_garda = 10.2829
+
+    lat_anguillara = 42.0837
+    lon_anguillara = 12.283
+
     df = get_historical_data_solcast("2024-08-01T00:00:00Z", lat=45.2756, lon=10.2829)
     df.to_csv(os.path.join(PROJECT_ROOT, "data", "weather", "garda_2024-08.csv"), index=False)

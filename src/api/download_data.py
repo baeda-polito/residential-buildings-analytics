@@ -6,10 +6,11 @@ from settings import PROJECT_ROOT
 
 def save_energy_data(aggregate="anguillara"):
 
+    building_list = []
     if aggregate == "anguillara":
-        building_list = load_anguillara(mode="online")
+        building_list = load_anguillara()
     elif aggregate == "garda":
-        building_list = load_garda(mode="online")
+        building_list = load_garda()
 
     for building in building_list:
         print(building)
@@ -37,5 +38,5 @@ def save_weather_data(prefix="anguillara"):
 
 
 if __name__ == "__main__":
-    save_weather_data(prefix="garda")
-    save_energy_data(aggregate="garda")
+    save_weather_data(prefix="anguillara")
+    save_energy_data(aggregate="anguillara")

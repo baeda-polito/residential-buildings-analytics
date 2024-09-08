@@ -6,7 +6,7 @@ import requests
 import json
 import urllib
 import urllib3
-from settings import PROJECT_ROOT, bearer_token
+from settings import bearer_token
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
