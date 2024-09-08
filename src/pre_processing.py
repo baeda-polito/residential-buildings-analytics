@@ -1,141 +1,115 @@
 import pandas as pd
-from sklearn.impute import KNNImputer
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_absolute_error, r2_score
-import matplotlib
-matplotlib.use('TkAgg')
-import matplotlib.pyplot as plt
 import numpy as np
 import os
 from settings import PROJECT_ROOT
+from src.utils.pv_model import get_pv_production
+from src.utils.pre_processing import (replace_constant_values, reconstruct_missing_values_interp,
+                                      reconstruct_missing_values_knn)
 
 
-def pre_process(data: pd.DataFrame, user_type: str, user_id: str):
-    """
-    Pre-processa i dati di "power" e "productionPower". La potenza è pre-processata in due fasi: prima vengono interpolati
-    i valore mancanti con un massimo di 4 valori consecutivi, poi viene utilizzato un algoritmo KNN per interpolare i
-    valori mancanti per i giorni in cui sono presenti più di 4 valori mancanti consecutivi ma meno di 16 (4 ore). Se vi sono
-    più di 16 valori mancanti consecutivi, si lascia NaN.
-    Per la productionPower, viene utilizzato un modello di regressione lineare tra Irradianza globale orizzontale e
-    potenza di produzione per interpolare i valori mancanti.
-    :param data: dataframe del dispositivo utente
-    :param user_type: tipo di utente (consumer o prosumer)
-    :return:
-    """
+def pre_process_power(data: pd.DataFrame, user_type: str, rated_power, rated_pv_power=None,
+                      max_missing_interp: int = 4, max_missing_knn: int = 24):
 
-    metrics = {}
-    data.set_index("timestamp", inplace=True)
-    data.index = pd.to_datetime(data.index)
-    data_pre_processed = pd.DataFrame(index=data.index, columns=["power"])
-    data_pre_processed.index = pd.to_datetime(data_pre_processed.index)
-
-    data_pre_processed["power"] = data["power"]
-
-    data_pre_processed['missing_encoded'] = data_pre_processed['power'].isnull().astype(int)
-    data_pre_processed['consecutive_missing'] = data_pre_processed['missing_encoded'].groupby(
-        (data_pre_processed['missing_encoded'] != data_pre_processed['missing_encoded'].shift()).cumsum()).cumcount() + 1
-
-    start_index = None
-    consecutive_missing = 0
-    for index, row in data_pre_processed.iterrows():
-        if row['missing_encoded'] == 1:
-            consecutive_missing = row['consecutive_missing']
-            if start_index is None:
-                start_index = index
-        elif start_index is not None:
-            if consecutive_missing <= 4:
-                adjusted_index_loc = max(data_pre_processed.index.get_loc(start_index) - 1, 0)
-                adjusted_index = data_pre_processed.index[adjusted_index_loc]
-                data_pre_processed.loc[adjusted_index:index, "power"] = data_pre_processed.loc[adjusted_index:index, "power"].interpolate(limit=4)
-            start_index = None
-
-    data_pre_processed['missing_encoded'] = data_pre_processed['power'].isnull().astype(int)
-    data_pre_processed['consecutive_missing'] = data_pre_processed['missing_encoded'].groupby(
-        (data_pre_processed['missing_encoded'] != data_pre_processed[
-            'missing_encoded'].shift()).cumsum()).cumcount() + 1
-    data_pre_processed.loc[data_pre_processed['missing_encoded'] == 0, "consecutive_missing"] = 0
-
-    daily_data = data_pre_processed["consecutive_missing"].resample("D").max()
-    daily_data = daily_data[daily_data <= 16]
-    knn_data = data_pre_processed[np.isin(data_pre_processed.index.date, daily_data.index.date)]
-    knn_data = knn_data[["power"]]
-    knn_imputer = KNNImputer(n_neighbors=5)
-    knn_data = knn_data.pivot_table(index=knn_data.index.date, columns=knn_data.index.strftime("%H:%M"), values="power")
-    knn_data_processed = knn_imputer.fit_transform(knn_data)
-    knn_data_processed = pd.DataFrame(knn_data_processed, index=knn_data.index, columns=knn_data.columns)
-    knn_data_processed.reset_index(inplace=True)
-    knn_data_processed_long = pd.melt(knn_data_processed, id_vars=['index'], value_vars=knn_data_processed.columns,
-                                      var_name='hour', value_name='power')
-    knn_data_processed_long['index'] = knn_data_processed_long['index'].astype(str)
-    knn_data_processed_long['timestamp'] = pd.to_datetime(
-        knn_data_processed_long['index'] + ' ' + knn_data_processed_long['hour'])
-    knn_data_processed_long.drop(columns=['index', 'hour'], inplace=True)
-    knn_data_processed_long.set_index('timestamp', inplace=True)
-    knn_data_processed_long.index = pd.to_datetime(knn_data_processed_long.index, utc=True)
-    knn_data_processed_long.sort_index(inplace=True)
-
-    power_data = data_pre_processed[["power"]]
-    power_data.loc[knn_data_processed_long.index, "power"] = knn_data_processed_long["power"]
-
-    weather_data = pd.read_csv(os.path.join(PROJECT_ROOT, "data", "weather", "anguillara.csv"))
-    weather_data["timestamp"] = pd.to_datetime(weather_data["timestamp"])
+    data_pre_processed = data[["timestamp", "power"]].copy()
 
     if user_type == "consumer":
-        data_final = power_data
-        data_final["impEnergy"] = data["impEnergy"]
-        data_final["expEnergy"] = data["expEnergy"]
-        data_final["productionPower"] = 0
-        data_final["productionEnergy"] = data["productionEnergy"]
-
-        index_diff = data_final.index.difference(weather_data["timestamp"])
-        data_final.loc[index_diff, "productionPower"] = np.nan
-
+        data_pre_processed.loc[data_pre_processed["power"] < 0, "power"] = np.nan
     else:
-        weather_data = pd.read_csv(os.path.join(PROJECT_ROOT, "data", "weather", "anguillara.csv")).iloc[:-1, :]
-        weather_data["timestamp"] = pd.to_datetime(weather_data["timestamp"])
-        data_model = pd.merge(data, weather_data, left_index=True, right_on="timestamp", how="right")
-        data_model.set_index("timestamp", inplace=True)
+        data_pre_processed.loc[(data_pre_processed["power"] < -rated_pv_power * 1000) | (data_pre_processed["power"] > rated_power * 1000), "power"] = np.nan
 
-        missing_values = data_model["productionPower"].isnull()
-        index_not_phyisical = data_model["productionPower"] < - data_model["power"]
-        data_to_reconstruct = data_model.loc[missing_values | index_not_phyisical]
+    data_pre_processed.loc[:, "power"] = replace_constant_values(data["power"], 4)
 
-        if len(data_to_reconstruct) > 0.9 * len(data_model):
-            data_final = pd.DataFrame(columns=["power", "impEnergy", "expEnergy", "productionPower", "productionEnergy"])
-        else:
+    data_pre_processed_lin = reconstruct_missing_values_interp(data_pre_processed[["timestamp", "power"]].copy(),
+                                                               max_missing=max_missing_interp)
+
+    data_pre_processed_knn = reconstruct_missing_values_knn(data_pre_processed_lin.copy(),
+                                                            k=5,
+                                                            min_missing=max_missing_interp + 1,
+                                                            max_missing=max_missing_knn)
+
+    data_pre_processed = data_pre_processed_knn.copy()
+
+    return data_pre_processed[["timestamp", "power"]]
+
+
+def pre_process_production_power(data: pd.DataFrame, weather_data: pd.DataFrame,
+                                 physic_model: bool = False, pv_params: dict = None, coordinates: list = None):
+
+    data["timestamp"] = pd.to_datetime(data["timestamp"])
+    weather_data["timestamp"] = pd.to_datetime(weather_data["timestamp"])
+
+    data_model = pd.merge(data, weather_data, on="timestamp", how="right")
+    data_model.set_index("timestamp", inplace=True)
+
+    missing_values = data_model["productionPower"].isnull()
+    outliers = (data_model["productionPower"] > pv_params["rated_power"] * 1000) | (data_model["productionPower"] < 0)
+    index_not_phyisical = data_model["productionPower"] < - data_model["power"]
+    data_to_reconstruct = data_model.loc[missing_values | index_not_phyisical | outliers]
+
+    if physic_model:
+        data_pre_processed = get_pv_production(
+            lat=coordinates[1],
+            lon=coordinates[0],
+            tilt=pv_params["tilt"],
+            azimuth=pv_params["azimuth"],
+            rated_power=pv_params["rated_power"] * 1000,
+            weather=weather_data)
+        data_pre_processed.reset_index(inplace=True)
+    else:
+        # Use data-driven model
+        if len(data_to_reconstruct) < 0.7 * len(data_model):
+            # TODO: Move into a function
             data_model.dropna(subset=["productionPower"], inplace=True)
             data_model = data_model[~index_not_phyisical]
+            data_model = data_model[~outliers]
             data_model.loc[data_model["ghi"] == 0, "productionPower"] = 0
 
-            plt.scatter(data_model["ghi"], data_model["productionPower"])
-            plt.xlabel("Global Horizontal Irradiance [W/m2]")
-            plt.ylabel("Production Power [W]")
-            plt.title("Global Horizontal Irradiance vs Production Power")
-            plt.savefig(os.path.join(PROJECT_ROOT, "figures", "pv_pre_processing", f"{user_id}_data_model.png"))
-            plt.close()
+            X_train = data_model[["ghi", "dni"]]
+            y_train = data_model["productionPower"]
 
             model = LinearRegression()
-            model.fit(data_model[["ghi"]], data_model["productionPower"])
+            model.fit(X_train, y_train)
 
-            y_true = data_model["productionPower"]
-            y_pred = model.predict(data_model[["ghi"]])
-            r2 = r2_score(y_true, y_pred)
-            mae = mean_absolute_error(y_true, y_pred)
-            metrics = {"R2": r2, "MAE": mae}
-
-            data_to_reconstruct["productionPower"] = model.predict(data_to_reconstruct[["ghi"]])
+            # Reconstruct the NaN with the model
+            data_to_reconstruct["productionPower"] = model.predict(data_to_reconstruct[["ghi", "dni"]])
             data_to_reconstruct.loc[data_to_reconstruct["productionPower"] < 0, "productionPower"] = 0
             data_to_reconstruct.loc[data_to_reconstruct["ghi"] == 0, "productionPower"] = 0
+            data_pre_processed = pd.concat([data_model, data_to_reconstruct])[['productionPower']]
+            data_pre_processed.sort_index(inplace=True)
+            data_pre_processed.reset_index(inplace=True)
+            data_pre_processed = data_pre_processed[["timestamp", "productionPower"]]
+        else:
+            print("Too few data for reconstructing 'productionPower' in this period")
+            data_pre_processed = pd.DataFrame(index=data_model.index, columns=["productionPower"])
+            data_pre_processed["productionPower"] = np.nan
+            data_pre_processed.reset_index(inplace=True, names=['timestamp'])
 
-            pv_data = pd.concat([data_model, data_to_reconstruct])[['productionPower']]
-            pv_data.sort_index(inplace=True)
-            data_final = pd.merge(power_data, pv_data, left_index=True, right_index=True, how="left")
-            data_final.iloc[0, 1] = 0
+    return data_pre_processed
 
-            data_final["impEnergy"] = data["impEnergy"]
-            data_final["expEnergy"] = data["expEnergy"]
-            data_final["productionEnergy"] = data["productionEnergy"]
 
-    data_final.reset_index(inplace=True, names=['timestamp'])
+if __name__ == "__main__":
+    df = pd.read_csv(os.path.join(PROJECT_ROOT, "data", "energy_meter", "7436df46-294b-4c97-bd1b-8aaa3aed97c5.csv"))
+    weather = pd.read_csv(os.path.join(PROJECT_ROOT, "data", "weather", "anguillara.csv"))
+    # Delete the "+00:00" from the timestamp
+    weather["timestamp"] = pd.to_datetime(weather["timestamp"])
+    weather["timestamp"] = weather["timestamp"].dt.strftime('%Y-%m-%d %H:%M:%S')
+    weather["timestamp"] = pd.to_datetime(weather["timestamp"])
 
-    return data_final, metrics
+    power = pre_process_power(df, "prostormer", 6, 6)
+    power["timestamp"] = pd.to_datetime(power["timestamp"])
+    power.set_index("timestamp", inplace=True)
+
+    df["timestamp"] = pd.to_datetime(df["timestamp"])
+    df["timestamp"] = df["timestamp"].dt.strftime('%Y-%m-%d %H:%M:%S')
+    df["timestamp"] = pd.to_datetime(df["timestamp"])
+    df.set_index("timestamp", inplace=True)
+    df["power"] = power["power"]
+    df.reset_index(inplace=True)
+
+    production_power = pre_process_production_power(df, weather, 6, physic_model=True,
+                                                    pv_params={"lat": 42.0837, "lon": 12.283, "tilt": 30, "azimuth": 0, "rated_power": 6000})
+    production_power.set_index("timestamp", inplace=True)
+
+    df.set_index("timestamp", inplace=True)
+    df.loc[production_power.index, "productionPower"] = production_power["productionPower"]
