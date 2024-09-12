@@ -20,6 +20,7 @@ class DataHandler:
                                      how="right")
         data_total = pd.merge(self.energy_data, self.weather_data, on="timestamp", how="left")
         data = data_total.dropna()
+        data.set_index("timestamp", inplace=True)
         data = data[["Production", "ghi", "dni", "air_temp", "azimuth", "zenith"]]
 
         return data
