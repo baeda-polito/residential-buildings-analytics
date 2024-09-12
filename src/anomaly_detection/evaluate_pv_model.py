@@ -1,6 +1,6 @@
 from src.anomaly_detection.mlp import MultiLayerPerceptron
 from src.anomaly_detection.data_handler import DataHandler
-from src.anomaly_detection.utils import plot_predictions, plot_distribution, plot_pred_vs_true
+from src.anomaly_detection.viz import plot_predictions, plot_distribution, plot_pred_vs_true
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, mean_absolute_percentage_error
 from pvlib.location import Location
 from src.building import Building
@@ -30,7 +30,7 @@ def calc_metrics(y_true, y_pred):
     }
 
 
-def evaluate_pv(uuid: str, aggregate: str = "anguillara"):
+def evaluate_pv_model(uuid: str, aggregate: str = "anguillara"):
 
     mlp = MultiLayerPerceptron(input_size=5, hidden_layers=[64, 64], output_size=1)
     mlp.load_state_dict(torch.load(f"../../data/pv_add/models/{uuid}.pth"))
@@ -57,12 +57,12 @@ def evaluate_pv(uuid: str, aggregate: str = "anguillara"):
 
     # Figure true vs pred
     data_plot = pd.DataFrame({"true": y_true_rescaled.flatten(), "pred": y_pred_rescaled.flatten()},
-                             index=energy_data.loc[data.index, "timestamp"])
+                             index=data.index)
     fig = plot_predictions(data_plot, building.building_info["name"])
     fig.write_html(f"../../figures/pv_evaluation/{uuid}_pred.html")
 
     # Residuals analysis
-    residuals = y_true_rescaled - y_pred_rescaled
+    residuals = y_pred_rescaled - y_true_rescaled
     data_residuals = data.copy()
     data_residuals["residuals"] = residuals
 
@@ -70,7 +70,7 @@ def evaluate_pv(uuid: str, aggregate: str = "anguillara"):
     fig_dist.write_html(f"../../figures/pv_evaluation/{uuid}_distr.html")
 
     fig_true_vs_pred = plot_pred_vs_true(data_plot, building.building_info["name"])
-    fig_true_vs_pred.write_html( f"../../figures/pv_evaluation/{uuid}_true_vs_pred.html")
+    fig_true_vs_pred.write_html(f"../../figures/pv_evaluation/{uuid}_true_vs_pred.html")
 
 
 if __name__ == "__main__":
@@ -79,4 +79,4 @@ if __name__ == "__main__":
     anguillara = load_anguillara()
     for building in anguillara:
         if building.building_info["user_type"] != "consumer":
-            evaluate_pv(building.building_info["id"])
+            evaluate_pv_model(building.building_info["id"])
