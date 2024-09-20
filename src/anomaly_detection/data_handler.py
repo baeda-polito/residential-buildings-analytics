@@ -13,8 +13,6 @@ class DataHandler:
     def create_data(self, location):
         self.energy_data["timestamp"] = pd.to_datetime(self.energy_data["timestamp"])
         self.weather_data["timestamp"] = pd.to_datetime(self.weather_data["timestamp"])
-        self.energy_data["timestamp"] = pd.to_datetime(self.energy_data["timestamp"])
-        self.weather_data["timestamp"] = pd.to_datetime(self.weather_data["timestamp"])
         solar_angles = location.get_solarposition(times=self.weather_data["timestamp"]).reset_index()
         self.weather_data = pd.merge(self.weather_data, solar_angles[["timestamp", "azimuth", "zenith"]], on="timestamp",
                                      how="right")

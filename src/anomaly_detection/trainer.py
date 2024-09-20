@@ -38,10 +38,10 @@ class Trainer:
             self.loss_list_valid.append(val_loss)
 
             if epoch % 10 == 0:
-                print(f"Epoch {epoch} - Loss train: {batch_loss} - Loss validation: {val_loss}")
+                print(f"Epoch {epoch} - Loss train: {batch_loss:.6f} - Loss validation: {val_loss:.6f}")
 
             # Early stopping
-            if epoch > 100 and abs(self.loss_list_valid[-2] - self.loss_list_valid[-1]) < self.config[
+            if epoch > self.config['min_epochs'] and abs(self.loss_list_valid[-2] - self.loss_list_valid[-1]) < self.config[
                 'early_stopping_delta']:
                 break
 

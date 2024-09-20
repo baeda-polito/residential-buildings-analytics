@@ -5,6 +5,7 @@ from src.building import load_anguillara
 from pvlib.location import Location
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import matplotlib.pyplot as plt
 import plotly.io as pio
 import pandas as pd
 import torch
@@ -92,7 +93,7 @@ for building in building_list:
             x=df_add.index,
             y=df_add['y_true'],
             mode='lines',
-            name='True',
+            name='Reale',
             line=dict(width=1.5, color='#2bb06a'),
             hovertemplate='Data: %{x}<br>True: %{y:.2f} W<extra></extra>'
         )
@@ -101,7 +102,7 @@ for building in building_list:
             x=df_add.index,
             y=df_add['y_pred'],
             mode='lines',
-            name='Predicted',
+            name='Predetto',
             line=dict(width=1.2, color='#b6353f'),
             hovertemplate='Data: %{x}<br>Predicted: %{y:.2f} W<extra></extra>'
         )
@@ -119,7 +120,7 @@ for building in building_list:
             x=df_add.index,
             y=df_add['LT'],
             mode='lines',
-            name='Lower threshold',
+            name='Threshold bassa severità',
             line=dict(width=1.2, color='#ee6b04', dash='dash'),
             hovertemplate='Data: %{x}<br>LT: %{y:.2f} W<extra></extra>'
         )
@@ -128,7 +129,7 @@ for building in building_list:
             x=df_add.index,
             y=df_add['HT'],
             mode='lines',
-            name='Higher threshold',
+            name='Threshold alta severità',
             line=dict(width=1.2, color='#ee2404', dash='dash'),
             hovertemplate='Data: %{x}<br>HT: %{y:.2f} W<extra></extra>'
         )
@@ -137,7 +138,7 @@ for building in building_list:
             x=df_add.index,
             y=df_add['severity'],
             mode='lines',
-            name='Severity',
+            name='Severità',
             line=dict(width=1.2, color='#b6353f'),
             hovertemplate='Data: %{x}<br>Severity: {y}<extra></extra>'
         )
@@ -149,7 +150,7 @@ for building in building_list:
             x=low_severity_points.index,
             y=low_severity_points["residuals"],
             mode='markers',
-            name='Low severity anomaly',
+            name='Anomalia bassa severità',
             marker=dict(color='#ee6b04', size=5)
         )
 
@@ -157,7 +158,7 @@ for building in building_list:
             x=high_severity_points.index,
             y=high_severity_points["residuals"],
             mode='markers',
-            name='High severity anomaly',
+            name='Anomalia alta severità',
             marker=dict(color='#b6353f', size=5)
         )
 
@@ -169,7 +170,7 @@ for building in building_list:
         fig_sev = go.Figure(data=[severity], layout=layout)
         fig_sev.write_html(f"../figures/pv_evaluation/{uuid}_severity.html")
 
-        fig = make_subplots(rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.1)
+        fig = make_subplots(rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.5, 0.4, 0.1])
         fig.add_trace(true, row=1, col=1)
         fig.add_trace(pred, row=1, col=1)
         fig.add_trace(residuo, row=2, col=1)
@@ -178,5 +179,29 @@ for building in building_list:
         fig.add_trace(low_severity, row=2, col=1)
         fig.add_trace(high_severity, row=2, col=1)
         fig.add_trace(severity, row=3, col=1)
-        # fig.update_layout(layout)
+
+        fig.update_layout(
+            annotations=[
+                dict(x=0.5, y=1, xref="paper", yref="paper",
+                     text="Predetto vs Reale", showarrow=False, font=dict(size=18, color="black")),
+                dict(x=0.5, y=0.5, xref="paper", yref="paper",
+                     text="Analisi dei residui", showarrow=False, font=dict(size=18, color="black")),
+                dict(x=0.5, y=0.1, xref="paper", yref="paper",
+                     text="Analisi della severità", showarrow=False, font=dict(size=18, color="black"))
+            ],
+            # Set the layout background to white
+            plot_bgcolor='white',
+            paper_bgcolor='white'
+        )
+
+        # Add y-axis titles for each row
+        fig.update_yaxes(title_text="Potenza [W]", row=1, col=1)  # Row 1 Y-axis title
+        fig.update_yaxes(title_text="Residuo [W]", row=2, col=1)  # Row 2 Y-axis title
+        fig.update_yaxes(title_text="Severità", row=3, col=1)  # Row 3 Y-axis title
+        fig.update_yaxes(
+            showgrid=True, gridcolor='#f4f4f4',  # Light grey gridlines
+            zeroline=True, zerolinecolor='black'  # Black zero line for y-axis
+        )
+        # Similarly, you can update x-axes if needed (for shared x-axis)
+        fig.update_xaxes(showgrid=True, gridcolor='#f4f4f4', zeroline=True, zerolinecolor='black')
         fig.write_html(f"../figures/pv_evaluation/{uuid}_all.html")

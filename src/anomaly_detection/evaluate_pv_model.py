@@ -1,10 +1,10 @@
 from src.anomaly_detection.mlp import MultiLayerPerceptron
 from src.anomaly_detection.data_handler import DataHandler
+from sklearn.model_selection import train_test_split
 from src.anomaly_detection.viz import plot_predictions, plot_distribution, plot_pred_vs_true
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, mean_absolute_percentage_error
 from pvlib.location import Location
 from src.building import Building
-import plotly.io as pio
 import pandas as pd
 import numpy as np
 import torch
@@ -18,6 +18,7 @@ def calc_metrics(y_true, y_pred):
     y_pred = y_pred[mask]
 
     mae = mean_absolute_error(y_true, y_pred)
+    mse = mean_squared_error(y_true, y_pred)
     rmse = np.sqrt(mean_squared_error(y_true, y_pred))
     r2 = r2_score(y_true, y_pred)
     mape = mean_absolute_percentage_error(y_true, y_pred)
@@ -26,7 +27,8 @@ def calc_metrics(y_true, y_pred):
         "MAE": np.round(mae, 2),
         "RMSE": np.round(rmse, 2),
         "R2": np.round(r2, 2),
-        "MAPE": np.round(mape * 100, 2)
+        "MAPE": np.round(mape * 100, 2),
+        "MSE": np.round(mse, 2)
     }
 
 
@@ -43,17 +45,32 @@ def evaluate_pv_model(uuid: str, aggregate: str = "anguillara"):
     data_handler = DataHandler(energy_data=energy_data, weather_data=weather_data)
     data = data_handler.create_data(location=location)
     X, y, x_scaler, y_scaler = data_handler.preprocess(data)
+    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42, shuffle=True)
 
     X_tensor = torch.tensor(X, dtype=torch.float32)
+    X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
+    X_val_tensor = torch.tensor(X_val, dtype=torch.float32)
 
     y_pred = mlp(X_tensor).detach().numpy()
+    y_pred_train = mlp(X_train_tensor).detach().numpy()
+    y_pred_val = mlp(X_val_tensor).detach().numpy()
 
     y_pred_rescaled = y_scaler.inverse_transform(y_pred)
     y_true_rescaled = y_scaler.inverse_transform(y)
 
-    metrics = calc_metrics(y_true_rescaled, y_pred_rescaled)
-    with open(f"../../data/pv_add/metrics/{uuid}.json", "w") as f:
-        json.dump(metrics, f)
+    y_pred_train_rescaled = y_scaler.inverse_transform(y_pred_train)
+    y_true_train_rescaled = y_scaler.inverse_transform(y_train)
+
+    y_pred_val_rescaled = y_scaler.inverse_transform(y_pred_val)
+    y_true_val_rescaled = y_scaler.inverse_transform(y_val)
+
+    metrics_train = calc_metrics(y_true_train_rescaled, y_pred_train_rescaled)
+    with open(f"../../data/pv_add/metrics/train_{uuid}.json", "w") as f:
+        json.dump(metrics_train, f)
+
+    metrics_train = calc_metrics(y_true_val_rescaled, y_pred_val_rescaled)
+    with open(f"../../data/pv_add/metrics/val_{uuid}.json", "w") as f:
+        json.dump(metrics_train, f)
 
     # Figure true vs pred
     data_plot = pd.DataFrame({"true": y_true_rescaled.flatten(), "pred": y_pred_rescaled.flatten()},

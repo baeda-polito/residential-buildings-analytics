@@ -28,8 +28,9 @@ def train(uuid: str):
 
     config = {
         'lr': 0.0001,
-        'max_epochs': 500,
-        'early_stopping_delta': 1e-6
+        'max_epochs': 300,
+        'early_stopping_delta': 1e-6,
+        'min_epochs': 50
     }
 
     trainer = Trainer(model=mlp, criterion=criterion, config=config)
@@ -37,11 +38,15 @@ def train(uuid: str):
     torch.save(mlp.state_dict(), f"../../data/pv_add/models/{uuid}.pth")
     trainer.evaluate(torch.tensor(X_val, dtype=torch.float32), y_val, y_scaler)
 
+    df_loss = pd.DataFrame({"train": trainer.loss_list_train, "validation": trainer.loss_list_valid})
+    df_loss.to_csv(f"../../data/pv_add/loss/{uuid}.csv", index=False)
+
 
 if __name__ == "__main__":
     from src.building import load_anguillara
 
     anguillara = load_anguillara()
-    for building in anguillara:
+    for building in anguillara[2:3]:
         if building.building_info["user_type"] != "consumer":
+            print(f"Training model for {building.building_info['id']} --- {building.building_info['name']}")
             train(building.building_info["id"])
