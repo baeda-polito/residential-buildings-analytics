@@ -5,7 +5,6 @@ import os
 import json
 import pandas as pd
 import numpy as np
-from datetime import datetime, timedelta
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -14,16 +13,19 @@ warnings.filterwarnings("ignore")
 class Building:
     """
     Classe che contiene le informazioni utili per un edificio e il suo contatore di energia.
-    :param uuid: identificativo dell'edificio
-    :param get_data_mode: modalità di recupero dei dati, online o offline. Se online, i dati verranno scaricati dal
-    portale di SmartHome, altrimenti verranno presi da un file csv nella cartella "data".
     """
 
-    def __init__(self, uuid, aggregate="anguillara"):
+    def __init__(self, uuid: str, aggregate: str):
+        """
+        Costruttore della classe Building
+        :param uuid: identificativo dell'edificio
+        :param aggregate: nome dell'aggregato
+        """
         self.building_info = {}
         self.get_building_info(uuid)
         self.building_info['aggregate'] = aggregate
         self.energy_meter = EnergyMeter(uuid)
+        self.energy_meter.set_data(uuid)
         self.energy_meter.pre_process(self.building_info["user_type"],
                                       self.building_info["rated_power"],
                                       aggregate=aggregate,
@@ -71,51 +73,6 @@ class EnergyMeter:
             "aggregation_functions": ["sumOfEnergy", "", "delta", "delta", "delta", "arithmeticMean", ""],
             "name": energy_meter["name"]
         }
-
-    def get_data(self, time_from, aggregation_period="quarter"):
-        """
-        Estrae i dati del contatore di energia dal portale di SmartHome e li restituisce in un DataFrame.
-        :param time_from: timestamp in formato stringa dell'istante di inizio richiesta dati
-        :param aggregation_period: aggregazione temporale del dato ("aurter, hourly", etc..)
-        :return: DataFrame con i dati del contatore di energia
-        """
-
-        flag = 0
-        yesterday = datetime.utcnow() - timedelta(days=1)
-        time_to = yesterday.strftime("%Y-%m-%dT23:59:00Z")
-        try:
-            data = get_data_device(
-                device_id=self.energy_meter_info["id"],
-                properties=self.energy_meter_info["properties"],
-                time_to=time_to,
-                time_from=time_from,
-                aggregation_function=self.energy_meter_info["aggregation_functions"],
-                aggregation_period=aggregation_period
-            )
-            flag = 1
-        except Exception as e:
-            print(f"Is not possible to retrieve data for device {self.energy_meter_info['id']}")
-
-        if flag == 1:
-            df_list = {}
-
-            for key, value_list in data.items():
-                new_key = key.split("_")[0]
-                df = pd.DataFrame(value_list, columns=['timestamp', new_key])
-                df['timestamp'] = pd.to_datetime(df['timestamp'])
-                df[new_key] = df[new_key].astype(float)
-                df_list[new_key] = df
-
-            df_energy_meter = pd.concat([df.set_index('timestamp') for df in df_list.values() if not df.empty],
-                                        axis=1).sort_values('timestamp')
-
-            timestamp_range = pd.date_range(start=time_from, end=time_to, freq='15min')
-            df_energy_meter = df_energy_meter.reindex(timestamp_range)
-            df_energy_meter.reset_index(inplace=True, names=['timestamp'])
-
-            return df_energy_meter
-        else:
-            return None
 
     def set_data(self, building_id):
         """
@@ -190,11 +147,13 @@ class EnergyMeter:
                 self.data = pd.DataFrame({"timestamp": timestamp, "Load": load, "Net": net, "Production": production})
 
             else:
-                data.set_index("timestamp", inplace=True)
-                load = data["power"]
+                # data.set_index("timestamp", inplace=True)
+                timestamp = data["timestamp"].reset_index(drop=True)
+                load = data["power"].reset_index(drop=True)
                 net = load
-                production = data["productionPower"]
-                self.data = pd.DataFrame({"Load": load, "Net": net, "Production": production})
+                production = data["productionPower"].reset_index(drop=True)
+
+                self.data = pd.DataFrame({"timestamp": timestamp, "Load": load, "Net": net, "Production": production})
 
         else:
             self.data = pd.DataFrame(columns=["timestamp", "Load", "Net", "Production"])

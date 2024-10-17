@@ -65,16 +65,13 @@ def get_devices(plant_id: str):
     return devices
 
 
-def get_data_device(device_id: str, properties: list, time_to: str, time_from: str, aggregation_function: list,
-                    aggregation_period: object = "quarter"):
+def get_data_device(device_id: str, properties: list, time_to: str, time_from: str):
     """
     Funzione che restituisce un dizionario con i dati delle grandezze definite in properties, per il sensore in input
-    :param aggregation_period:
     :param device_id: id del sensore
     :param properties: la lista di proprietà
     :param time_to:
     :param time_from:
-    :param aggregation_function:
     :return:
     """
 
@@ -83,12 +80,8 @@ def get_data_device(device_id: str, properties: list, time_to: str, time_from: s
     # Initialize the list to store parameters
     params = [("deviceId", device_id), ("timeTo", time_to), ("timeFrom", time_from)]
 
-    for prop, func in zip(properties, aggregation_function):
-        if "Avg15" not in prop:
-            name_param = f"{prop}_{func}_{aggregation_period}"
-        else:
-            name_param = f"{prop}_{func}"
-        params.append(("name[]", name_param))
+    for prop in properties:
+        params.append(("name[]", prop))
 
     querystring = urllib.parse.urlencode(params)
 

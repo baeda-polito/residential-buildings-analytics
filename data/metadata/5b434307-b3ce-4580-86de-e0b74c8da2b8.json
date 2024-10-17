@@ -15,5 +15,16 @@
   "coordinates": [
     10.4845346,
     45.4610389
-  ]
+  ],
+  "ac": {
+    "n_ac": null,
+    "type": null
+  },
+  "pv": {
+    "rated_power": null,
+    "tilt": null,
+    "azimuth": null,
+    "storage": null
+  },
+  "retrofit": null
 }
