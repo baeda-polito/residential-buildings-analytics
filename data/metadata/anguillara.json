@@ -1,0 +1,281 @@
+[
+  {
+    "id": "7436df46-294b-4c97-bd1b-8aaa3aed97c5",
+    "name": "DU_1",
+    "user_type": "prostormer",
+    "persons": 2,
+    "occupancy": {
+      "8-13": 1,
+      "13-19": 1,
+      "19-24": 2,
+      "24-8": 2
+    },
+    "rated_power": 6,
+    "tariff": "monorary",
+    "surface": 140,
+    "coordinates": [
+      12.2830132,
+      42.0837101
+    ],
+    "ac": {
+      "n_ac": 4,
+      "type": "cooling+heating"
+    },
+    "pv": {
+      "rated_power": 6,
+      "tilt": 29,
+      "azimuth": 20,
+      "storage": null
+    },
+    "retrofit": 1,
+    "aggregate": "anguillara"
+  },
+  {
+    "id": "80c3bedd-8c41-450c-ae52-1864b9ace7aa",
+    "name": "DU_2",
+    "user_type": "prostormer",
+    "persons": 2,
+    "occupancy": {
+      "8-13": 2,
+      "13-19": 2,
+      "19-24": 2,
+      "24-8": 2
+    },
+    "rated_power": 3,
+    "tariff": "",
+    "surface": 165,
+    "coordinates": [
+      12.2830132,
+      42.0837101
+    ],
+    "ac": {
+      "n_ac": 3,
+      "type": "cooling"
+    },
+    "pv": {
+      "rated_power": 3.2,
+      "tilt": 18,
+      "azimuth": 0,
+      "storage": 5
+    },
+    "retrofit": 0,
+    "aggregate": "anguillara"
+  },
+  {
+    "id": "d93552c8-e7f6-45bb-b382-bd4a2b969502",
+    "name": "DU_4",
+    "user_type": "prostormer",
+    "persons": 2,
+    "occupancy": {
+      "8-13": 0,
+      "13-19": 0,
+      "19-24": 2,
+      "24-8": 2
+    },
+    "rated_power": 6,
+    "tariff": "",
+    "surface": 297,
+    "coordinates": [
+      12.2830132,
+      42.0837101
+    ],
+    "ac": {
+      "n_ac": 3,
+      "type": "cooling"
+    },
+    "pv": {
+      "rated_power": 6,
+      "tilt": 29,
+      "azimuth": 35,
+      "storage": null
+    },
+    "retrofit": 1,
+    "aggregate": "anguillara"
+  },
+  {
+    "id": "b87be67b-8133-4b7f-a045-c06da08b5416",
+    "name": "DU_5",
+    "user_type": "consumer",
+    "persons": 2,
+    "occupancy": {
+      "8-13": 1,
+      "13-19": 1,
+      "19-24": 2,
+      "24-8": 2
+    },
+    "rated_power": 3,
+    "tariff": "",
+    "surface": 50,
+    "coordinates": [
+      12.2830132,
+      42.0837101
+    ],
+    "ac": {
+      "n_ac": 2,
+      "type": "cooling"
+    },
+    "pv": {
+      "rated_power": null,
+      "tilt": null,
+      "azimuth": null,
+      "storage": null
+    },
+    "retrofit": 0,
+    "aggregate": "anguillara"
+  },
+  {
+    "id": "9a3386b3-017c-4848-ac6d-a24bf7f36077",
+    "name": "DU_6",
+    "user_type": "consumer",
+    "persons": 1,
+    "occupancy": {
+      "8-13": 1,
+      "13-19": 1,
+      "19-24": 1,
+      "24-8": 1
+    },
+    "rated_power": 3,
+    "tariff": "",
+    "surface": 109,
+    "coordinates": [
+      12.2830132,
+      42.0837101
+    ],
+    "ac": {
+      "n_ac": 1,
+      "type": "cooling"
+    },
+    "pv": {
+      "rated_power": null,
+      "tilt": null,
+      "azimuth": null,
+      "storage": null
+    },
+    "retrofit": 1,
+    "aggregate": "anguillara"
+  },
+  {
+    "id": "8490da00-eb75-45df-888e-851ea3103ec4",
+    "name": "DU_7",
+    "user_type": "producer",
+    "persons": 2,
+    "occupancy": {
+      "8-13": 2,
+      "13-19": 2,
+      "19-24": 2,
+      "24-8": 2
+    },
+    "rated_power": 4.5,
+    "tariff": "",
+    "surface": 115.5,
+    "coordinates": [
+      12.2830132,
+      42.0837101
+    ],
+    "ac": {
+      "n_ac": 3,
+      "type": "cooling+heating"
+    },
+    "pv": {
+      "rated_power": 3.45,
+      "tilt": 25,
+      "azimuth": 45,
+      "storage": null
+    },
+    "retrofit": 0,
+    "aggregate": "anguillara"
+  },
+  {
+    "id": "08f2fc03-ce0b-4cd6-ab25-8b3906feb858",
+    "name": "DU_8",
+    "user_type": "consumer",
+    "persons": 3,
+    "occupancy": {
+      "8-13": 1,
+      "13-19": 2,
+      "19-24": 3,
+      "24-8": 3
+    },
+    "rated_power": 6,
+    "tariff": "",
+    "surface": 300,
+    "coordinates": [
+      12.2830132,
+      42.0837101
+    ],
+    "ac": {
+      "n_ac": 3,
+      "type": "cooling"
+    },
+    "pv": {
+      "rated_power": null,
+      "tilt": null,
+      "azimuth": null,
+      "storage": null
+    },
+    "retrofit": 0,
+    "aggregate": "anguillara"
+  },
+  {
+    "id": "3d956901-f5ea-4094-9c85-333cc68183d4",
+    "name": "DU_9",
+    "user_type": "producer",
+    "persons": 1,
+    "occupancy": {
+      "8-13": 1,
+      "13-19": 0,
+      "19-24": 0,
+      "24-8": 1
+    },
+    "rated_power": 3,
+    "tariff": "",
+    "surface": 156,
+    "coordinates": [
+      12.2830132,
+      42.0837101
+    ],
+    "ac": {
+      "n_ac": 0,
+      "type": null
+    },
+    "pv": {
+      "rated_power": 3,
+      "tilt": 30,
+      "azimuth": 40,
+      "storage": null
+    },
+    "retrofit": 0,
+    "aggregate": "anguillara"
+  },
+  {
+    "id": "4ef8599c-2c4b-433e-94c8-ca48e23a5a07",
+    "name": "DU_10",
+    "user_type": "consumer",
+    "persons": 3,
+    "occupancy": {
+      "8-13": 1,
+      "13-19": 2,
+      "19-24": 3,
+      "24-8": 3
+    },
+    "rated_power": 3,
+    "tariff": "",
+    "surface": 274,
+    "coordinates": [
+      12.2830132,
+      42.0837101
+    ],
+    "ac": {
+      "n_ac": 2,
+      "type": "cooling"
+    },
+    "pv": {
+      "rated_power": null,
+      "tilt": null,
+      "azimuth": null,
+      "storage": null
+    },
+    "retrofit": 0,
+    "aggregate": "anguillara"
+  }
+]
