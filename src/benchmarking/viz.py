@@ -39,8 +39,7 @@ def plot_load_profiles_user(user_id: str, aggregate: str):
     building = Building(user_id, aggregate)
     data = building.energy_meter.data
 
-    cluster = pd.read_csv(os.path.join(PROJECT_ROOT, "results", f"cluster_{aggregate}.csv"))
-    cluster['cluster'] = cluster.apply(lambda row: 'C' + str(row['cluster']) if row['user_type'] == 'consumer' else 'P' + str(row['cluster']), axis=1)
+    cluster = pd.read_csv(os.path.join(PROJECT_ROOT, "results", f"cluster_{aggregate}_assigned.csv"))
     cluster_user = cluster[cluster["user_id"] == user_id]
     cluster_user["date"] = pd.to_datetime(cluster_user["date"]).dt.date
 
@@ -101,8 +100,7 @@ def plot_load_profiles_aggregate(aggregate: str):
     :param aggregate: nome dell'aggregato ("anguillara" o "garda")
     """
 
-    cluster = pd.read_csv(os.path.join(PROJECT_ROOT, "results", f"cluster_{aggregate}.csv"))
-    cluster['cluster'] = cluster.apply(lambda row: 'C' + str(row['cluster']) if row['user_type'] == 'consumer' else 'P' + str(row['cluster']), axis=1)
+    cluster = pd.read_csv(os.path.join(PROJECT_ROOT, "results", f"cluster_{aggregate}_assigned.csv"))
     cluster["date"] = pd.to_datetime(cluster["date"]).dt.date
 
     cluster_consumer = cluster[cluster["user_type"] == "consumer"]
@@ -215,8 +213,7 @@ def plot_cluster_percentage(aggregate: str):
     :param aggregate: nome dell'aggregato ("anguillara" o "garda")
     """
 
-    cluster = pd.read_csv(os.path.join(PROJECT_ROOT, "results", f"cluster_{aggregate}.csv"))
-    cluster['cluster'] = cluster.apply(lambda row: 'C' + str(row['cluster']) if row['user_type'] == 'consumer' else 'P' + str(row['cluster']), axis=1)
+    cluster = pd.read_csv(os.path.join(PROJECT_ROOT, "results", f"cluster_{aggregate}_assigned.csv"))
 
     consumer_cluster = cluster[cluster["user_type"] == "consumer"]
     consumer_cluster_grouped = consumer_cluster.groupby(["building_name", "cluster"]).size().reset_index(name="count")
@@ -277,3 +274,7 @@ def plot_cluster_percentage(aggregate: str):
                 fancybox=True, shadow=True)
     plt.tight_layout(rect=(0, 0.05, 1, 1))
     plt.savefig(os.path.join(PROJECT_ROOT, "figures", "clustering", f"cluster_percentage_{aggregate}_prosumer.png"))
+
+
+def plot_centroids(aggregate: str):
+    pass

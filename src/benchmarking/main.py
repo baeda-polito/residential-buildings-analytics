@@ -1,5 +1,6 @@
 import json
 from src.benchmarking.clustering import run_clustering
+from src.benchmarking.assign import calculate_medioids, assign_cluster
 from src.benchmarking.viz import (plot_load_profiles_user, plot_load_profiles_aggregate,
                                   plot_cluster_percentage)
 
@@ -14,6 +15,8 @@ def run_benchmarking(aggregate: str):
         building_list = json.load(f)
 
     run_clustering(aggregate)
+    calculate_medioids(aggregate)
+    assign_cluster(aggregate)
     plot_load_profiles_aggregate(aggregate)
     plot_cluster_percentage(aggregate)
 
