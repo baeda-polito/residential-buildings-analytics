@@ -52,6 +52,9 @@ def plot_load_profiles_user(user_id: str, aggregate: str):
     data_cluster["hour"] = data_cluster["timestamp"].dt.strftime("%H:%M")
 
     cluster_labels = cluster.loc[cluster["user_type"] == building.building_info["user_type"], "cluster"].unique()
+    # Drop the 'Anomalous' if present
+    if "Anomalous" in cluster_labels:
+        cluster_labels = cluster_labels[cluster_labels != "Anomalous"]
     cluster_labels.sort()
 
     data_cluster_pivot = data_cluster.pivot(index=["date", "cluster"], columns="hour", values="Load").reset_index().drop(columns=["date"])
@@ -62,7 +65,7 @@ def plot_load_profiles_user(user_id: str, aggregate: str):
     medioid, q1, q3 = find_medioid_and_quartiles(data_cluster_pivot, centroids_pivot)
     medioid = medioid.reset_index(names=["cluster"]).melt(id_vars="cluster", var_name="hour", value_name="Load")
 
-    fig, ax = plt.subplots(figsize=(12, 4), nrows=1, ncols=cluster_labels.size, sharey=True)
+    fig, ax = plt.subplots(figsize=(14, 4), nrows=1, ncols=(cluster_labels.size + 1), sharey=True)
 
     palette = sns.color_palette("colorblind", cluster_labels.size)
 
@@ -77,7 +80,7 @@ def plot_load_profiles_user(user_id: str, aggregate: str):
         ax[i].set_xlabel("Ora del giorno")
         ax[i].set_ylabel("Potenza [kW]")
         ax[i].set_xticks(range(0, 96, 16))
-        ax[i].tick_params(axis='x', labelsize=9)
+        ax[i].tick_params(axis='x', labelsize=8)
 
     # Calculate upper_bound and lower_bound as 1 std on each hour
     total_load_profiles = data_cluster[["hour", "Load", "cluster"]]
@@ -103,9 +106,21 @@ def plot_load_profiles_user(user_id: str, aggregate: str):
         ax[j].fill_between(cluster_lower_bound["hour"], cluster_lower_bound.set_index("hour")["Load"],
                            cluster_upper_bound.set_index("hour")["Load"], color=color, alpha=0.3)
 
+    # Adding the anomalous profiles
+    if "Anomalous" in data_cluster["cluster"].unique():
+        data_anomalous = data_cluster[data_cluster["cluster"] == "Anomalous"]
+        data_anomalous_grouped = data_anomalous.groupby("date")
+        for date, group in data_anomalous_grouped:
+            ax[j+1].plot(group["hour"], group["Load"], color='red', alpha=1, linewidth=0.5)
+    ax[j+1].set_title("Anomalous")
+    ax[j+1].set_xlabel("Ora del giorno")
+    ax[j+1].set_ylabel("Potenza [kW]")
+    ax[j+1].set_xticks(range(0, 96, 16))
+    ax[j+1].tick_params(axis='x', labelsize=8)
+
     plt.tight_layout(rect=(0, 0.05, 1, 0.92), h_pad=4)
     plt.suptitle(f"Profili di carico divisi per cluster per l'utente {building.building_info['name']}",
-                    fontsize=16, fontweight='bold')
+                 fontsize=16, fontweight='bold')
     plt.savefig(os.path.join(PROJECT_ROOT, "figures", "clustering", f"load_profiles_{user_id}.png"))
 
 
@@ -117,6 +132,7 @@ def plot_load_profiles_aggregate(aggregate: str):
 
     cluster = pd.read_csv(os.path.join(PROJECT_ROOT, "results", f"cluster_{aggregate}_assigned.csv"))
     cluster["date"] = pd.to_datetime(cluster["date"]).dt.date
+    cluster = cluster[cluster["cluster"] != "Anomalous"]
 
     cluster_consumer = cluster[cluster["user_type"] == "consumer"]
     cluster_labels_consumer = cluster_consumer["cluster"].unique()
@@ -244,7 +260,12 @@ def plot_cluster_percentage(aggregate: str):
     df_cluster_percentage.fillna(0, inplace=True)
     df_cluster_percentage = df_cluster_percentage.round(1)
 
-    palette = sns.color_palette("colorblind", n_colors=len(df_cluster_percentage.columns))
+    if 'Anomalous' in df_cluster_percentage.columns:
+        palette = sns.color_palette("colorblind", n_colors=len(df_cluster_percentage.columns) - 1)
+        palette.insert(0, (1, 0, 0))
+    else:
+        palette = sns.color_palette("colorblind", n_colors=len(df_cluster_percentage.columns))
+
     fig, ax = plt.subplots(figsize=(10, 8))
     bars = df_cluster_percentage.plot(kind="barh", stacked=True, ax=ax, color=palette)
     ax.set_xlabel("Percentuale [%]", fontsize=14)
@@ -274,7 +295,12 @@ def plot_cluster_percentage(aggregate: str):
     df_cluster_percentage.fillna(0, inplace=True)
     df_cluster_percentage = df_cluster_percentage.round(1)
 
-    palette = sns.color_palette("colorblind", n_colors=len(df_cluster_percentage.columns))
+    if 'Anomalous' in df_cluster_percentage.columns:
+        palette = sns.color_palette("colorblind", n_colors=len(df_cluster_percentage.columns) - 1)
+        # Append the red color to the palette at first position
+        palette.insert(0, (1, 0, 0))
+    else:
+        palette = sns.color_palette("colorblind", n_colors=len(df_cluster_percentage.columns))
     fig, ax = plt.subplots(figsize=(10, 8))
     bars = df_cluster_percentage.plot(kind="barh", stacked=True, ax=ax, color=palette)
     ax.set_xlabel("Percentuale [%]", fontsize=14)
@@ -298,6 +324,3 @@ def plot_cluster_percentage(aggregate: str):
 
 def plot_centroids(aggregate: str):
     pass
-
-
-plot_load_profiles_user("7436df46-294b-4c97-bd1b-8aaa3aed97c5", "anguillara")

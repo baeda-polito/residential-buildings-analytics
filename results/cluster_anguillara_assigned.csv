@@ -23,7 +23,7 @@ date,cluster,building_name,user_type,user_id
 2024-03-12,P0,DU_1,prostormer,7436df46-294b-4c97-bd1b-8aaa3aed97c5
 2024-03-13,P1,DU_1,prostormer,7436df46-294b-4c97-bd1b-8aaa3aed97c5
 2024-03-14,P1,DU_1,prostormer,7436df46-294b-4c97-bd1b-8aaa3aed97c5
-2024-03-15,P0,DU_1,prostormer,7436df46-294b-4c97-bd1b-8aaa3aed97c5
+2024-03-15,Anomalous,DU_1,prostormer,7436df46-294b-4c97-bd1b-8aaa3aed97c5
 2024-03-16,P1,DU_1,prostormer,7436df46-294b-4c97-bd1b-8aaa3aed97c5
 2024-03-17,P0,DU_1,prostormer,7436df46-294b-4c97-bd1b-8aaa3aed97c5
 2024-03-18,P0,DU_1,prostormer,7436df46-294b-4c97-bd1b-8aaa3aed97c5
@@ -64,7 +64,7 @@ date,cluster,building_name,user_type,user_id
 2024-04-22,P0,DU_1,prostormer,7436df46-294b-4c97-bd1b-8aaa3aed97c5
 2024-04-23,P2,DU_1,prostormer,7436df46-294b-4c97-bd1b-8aaa3aed97c5
 2024-04-24,P0,DU_1,prostormer,7436df46-294b-4c97-bd1b-8aaa3aed97c5
-2024-04-25,P1,DU_1,prostormer,7436df46-294b-4c97-bd1b-8aaa3aed97c5
+2024-04-25,Anomalous,DU_1,prostormer,7436df46-294b-4c97-bd1b-8aaa3aed97c5
 2024-04-26,P2,DU_1,prostormer,7436df46-294b-4c97-bd1b-8aaa3aed97c5
 2024-04-27,P1,DU_1,prostormer,7436df46-294b-4c97-bd1b-8aaa3aed97c5
 2024-04-28,P1,DU_1,prostormer,7436df46-294b-4c97-bd1b-8aaa3aed97c5
@@ -302,7 +302,7 @@ date,cluster,building_name,user_type,user_id
 2024-01-30,P0,DU_4,prostormer,d93552c8-e7f6-45bb-b382-bd4a2b969502
 2024-01-31,P1,DU_4,prostormer,d93552c8-e7f6-45bb-b382-bd4a2b969502
 2024-02-06,P1,DU_4,prostormer,d93552c8-e7f6-45bb-b382-bd4a2b969502
-2024-02-07,P1,DU_4,prostormer,d93552c8-e7f6-45bb-b382-bd4a2b969502
+2024-02-07,Anomalous,DU_4,prostormer,d93552c8-e7f6-45bb-b382-bd4a2b969502
 2024-02-08,P1,DU_4,prostormer,d93552c8-e7f6-45bb-b382-bd4a2b969502
 2024-02-09,P1,DU_4,prostormer,d93552c8-e7f6-45bb-b382-bd4a2b969502
 2024-02-10,P1,DU_4,prostormer,d93552c8-e7f6-45bb-b382-bd4a2b969502
@@ -328,7 +328,7 @@ date,cluster,building_name,user_type,user_id
 2024-03-13,P1,DU_4,prostormer,d93552c8-e7f6-45bb-b382-bd4a2b969502
 2024-03-14,P3,DU_4,prostormer,d93552c8-e7f6-45bb-b382-bd4a2b969502
 2024-03-15,P3,DU_4,prostormer,d93552c8-e7f6-45bb-b382-bd4a2b969502
-2024-03-16,P1,DU_4,prostormer,d93552c8-e7f6-45bb-b382-bd4a2b969502
+2024-03-16,Anomalous,DU_4,prostormer,d93552c8-e7f6-45bb-b382-bd4a2b969502
 2024-03-17,P1,DU_4,prostormer,d93552c8-e7f6-45bb-b382-bd4a2b969502
 2024-03-18,P3,DU_4,prostormer,d93552c8-e7f6-45bb-b382-bd4a2b969502
 2024-03-19,P1,DU_4,prostormer,d93552c8-e7f6-45bb-b382-bd4a2b969502

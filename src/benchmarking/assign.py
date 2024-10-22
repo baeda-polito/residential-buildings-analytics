@@ -109,8 +109,9 @@ def assign_cluster(aggregate: str):
         else:
             medioids = medioids_prosumer
 
-        # Assign the cluster with the minimum distance
-        clusters = data_pivot.apply(lambda row: medioids.apply(lambda x: euclidean(row, x), axis=1).idxmin(), axis=1)
+        clusters = data_pivot.apply(
+            lambda row: assign_to_nearest_or_anomalous(row, medioids), axis=1
+        )
         clusters = clusters.reset_index()
         clusters.columns = ["date", "cluster"]
         clusters["building_name"] = building.building_info["name"]
@@ -122,3 +123,26 @@ def assign_cluster(aggregate: str):
     df = pd.concat(building_data_list)
 
     df.to_csv(f"../../results/cluster_{aggregate}_assigned.csv", index=False)
+
+
+def assign_to_nearest_or_anomalous(load_profile, medioids, threshold=4):
+    """
+    Assegna l'etichetta di cluster al profilo di carico più vicino, a meno che la distanza non superi la soglia.
+    Se la distanza è maggiore della soglia, il profilo viene assegnato ad 'Anomalous'.
+    :param load_profile: profilo di carico da assegnare
+    :param medioids: medioidi dei cluster
+    :param threshold: soglia di distanza
+    :return: etichetta del cluster  o 'Anomalous'
+    """
+    # Calculate the Euclidean distance between the load profile and all medoids
+    distances = medioids.apply(lambda x: euclidean(load_profile, x), axis=1)
+
+    # Get the minimum distance and the corresponding cluster
+    min_distance = distances.min()
+    closest_cluster = distances.idxmin()
+
+    # If the minimum distance exceeds the threshold, assign to "Anomalous"
+    if min_distance > threshold:
+        return "Anomalous"
+
+    return closest_cluster
