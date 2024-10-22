@@ -14,7 +14,7 @@ def run_benchmarking(aggregate: str):
     with open(f"../../data/metadata/{aggregate}.json", "r") as f:
         building_list = json.load(f)
 
-    # run_clustering(aggregate)
+    run_clustering(aggregate)
     calculate_medioids(aggregate)
     assign_cluster(aggregate)
     plot_load_profiles_aggregate(aggregate)
