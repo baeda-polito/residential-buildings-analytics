@@ -130,6 +130,27 @@ def plot_load_profiles_aggregate(aggregate: str):
         data = pd.merge(data, cluster_user, on="date", how="inner")
         building_data_list.append(data)
 
+    # Calculate the centroids
+    medioids = pd.concat([
+        pd.read_csv(os.path.join(PROJECT_ROOT, "results", f"medioid_{aggregate}_consumer.csv"), index_col=0),
+        pd.read_csv(os.path.join(PROJECT_ROOT, "results", f"medioid_{aggregate}_prosumer.csv"), index_col=0),
+    ]).reset_index(names="cluster")
+    medioids = medioids.melt(id_vars="cluster", var_name="hour", value_name="Load_norm")
+
+    # Calculate upper_bound and lower_bound as 1 std on each hour
+    total_load_profiles = pd.concat(building_data_list)
+    total_load_profiles_std = total_load_profiles[["hour", "Load_norm", "cluster"]].groupby(["hour", "cluster"]).std().reset_index()
+
+    upper_bound = medioids.copy()
+    upper_bound["Load_norm"] = (upper_bound["Load_norm"] + total_load_profiles_std["Load_norm"]).clip(upper=1)
+
+    lower_bound = medioids.copy()
+    lower_bound["Load_norm"] = (lower_bound["Load_norm"] - total_load_profiles_std["Load_norm"])
+    # Clip the lower bound to the minimum value in that cluster
+    lower_bound = lower_bound.merge(total_load_profiles.groupby("cluster")["Load_norm"].min().reset_index(), on="cluster")
+    lower_bound["Load_norm"] = lower_bound[["Load_norm_x", "Load_norm_y"]].max(axis=1)
+    lower_bound.drop(columns=["Load_norm_x", "Load_norm_y"], inplace=True)
+
     fig, ax = plt.subplots(figsize=(12, 4), nrows=1, ncols=cluster_labels_consumer.size, sharey=True)
     palette = sns.color_palette("colorblind", cluster_labels_consumer.size)
 
@@ -139,30 +160,22 @@ def plot_load_profiles_aggregate(aggregate: str):
             data_cluster_grouped = data_cluster.groupby("date")
 
             for date, group in data_cluster_grouped:
-                ax[i].plot(group["hour"], group["Load_norm"], color=palette[i], alpha=0.1, linewidth=0.2)
+                ax[i].plot(group["hour"], group["Load_norm"], color=palette[i], alpha=0.1, linewidth=0.1)
             ax[i].set_title(f"Cluster {cluster_label}")
             ax[i].set_xlabel("Ora del giorno")
             ax[i].set_ylabel("Potenza normalizzata [-]")
             ax[i].set_xticks(range(0, 96, 16))
             ax[i].tick_params(axis='x', labelsize=9)
 
-    total_load_profiles = pd.concat(building_data_list)
-    centroid_load_profiles = total_load_profiles[["hour", "Load_norm", "cluster"]].groupby(["hour", "cluster"]).median()
-    centroid_load_profiles.reset_index(inplace=True)
-    q1 = total_load_profiles[["hour", "Load_norm", "cluster"]].groupby(["hour", "cluster"]).quantile(0.25)
-    q1.reset_index(inplace=True)
-    q3 = total_load_profiles[["hour", "Load_norm", "cluster"]].groupby(["hour", "cluster"]).quantile(0.75)
-    q3.reset_index(inplace=True)
-
     for j, cluster_label in enumerate(cluster_labels_consumer):
-        cluster_data = centroid_load_profiles[centroid_load_profiles["cluster"] == cluster_label]
-        cluster_q1 = q1[q1["cluster"] == cluster_label]
-        cluster_q3 = q3[q3["cluster"] == cluster_label]
+        cluster_data = medioids[medioids["cluster"] == cluster_label]
+        cluster_lower_bound = lower_bound[lower_bound["cluster"] == cluster_label]
+        cluster_upper_bound = upper_bound[upper_bound["cluster"] == cluster_label]
 
         color = palette[j]
         ax[j].plot(cluster_data.set_index("hour")["Load_norm"], color=color, label="Centroid Consumer")
-        ax[j].fill_between(cluster_q1["hour"], cluster_q1.set_index("hour")["Load_norm"],
-                           cluster_q3.set_index("hour")["Load_norm"], color=color, alpha=0.3)
+        ax[j].fill_between(cluster_lower_bound["hour"], cluster_lower_bound.set_index("hour")["Load_norm"],
+                           cluster_upper_bound.set_index("hour")["Load_norm"], color=color, alpha=0.3)
 
     plt.tight_layout(rect=(0, 0.05, 1, 0.92), h_pad=4)
     plt.suptitle(f"Profili di carico dei CONSUMER nei cluster per {aggregate.title()}", fontsize=16, fontweight='bold')
@@ -177,30 +190,22 @@ def plot_load_profiles_aggregate(aggregate: str):
             data_cluster_grouped = data_cluster.groupby("date")
 
             for date, group in data_cluster_grouped:
-                ax[i].plot(group["hour"], group["Load_norm"], color=palette[i], alpha=0.1, linewidth=0.2)
+                ax[i].plot(group["hour"], group["Load_norm"], color=palette[i], alpha=0.1, linewidth=0.1)
             ax[i].set_title(f"Cluster {cluster_label}")
             ax[i].set_xlabel("Ora del giorno")
             ax[i].set_ylabel("Potenza normalizzata [-]")
             ax[i].set_xticks(range(0, 96, 16))
             ax[i].tick_params(axis='x', labelsize=9)
 
-    total_load_profiles = pd.concat(building_data_list)
-    centroid_load_profiles = total_load_profiles[["hour", "Load_norm", "cluster"]].groupby(["hour", "cluster"]).median()
-    centroid_load_profiles.reset_index(inplace=True)
-    q1 = total_load_profiles[["hour", "Load_norm", "cluster"]].groupby(["hour", "cluster"]).quantile(0.25)
-    q1.reset_index(inplace=True)
-    q3 = total_load_profiles[["hour", "Load_norm", "cluster"]].groupby(["hour", "cluster"]).quantile(0.75)
-    q3.reset_index(inplace=True)
-
     for j, cluster_label in enumerate(cluster_labels_prosumer):
-        cluster_data = centroid_load_profiles[centroid_load_profiles["cluster"] == cluster_label]
-        cluster_q1 = q1[q1["cluster"] == cluster_label]
-        cluster_q3 = q3[q3["cluster"] == cluster_label]
+        cluster_data = medioids[medioids["cluster"] == cluster_label]
+        cluster_lower_bound = lower_bound[lower_bound["cluster"] == cluster_label]
+        cluster_upper_bound = upper_bound[upper_bound["cluster"] == cluster_label]
 
         color = palette[j]
-        ax[j].plot(cluster_data.set_index("hour")["Load_norm"], color=color, label="Centroid Prosumer")
-        ax[j].fill_between(cluster_q1["hour"], cluster_q1.set_index("hour")["Load_norm"],
-                           cluster_q3.set_index("hour")["Load_norm"], color=color, alpha=0.3)
+        ax[j].plot(cluster_data.set_index("hour")["Load_norm"], color=color, label="Centroid Consumer")
+        ax[j].fill_between(cluster_lower_bound["hour"], cluster_lower_bound.set_index("hour")["Load_norm"],
+                           cluster_upper_bound.set_index("hour")["Load_norm"], color=color, alpha=0.3)
 
     plt.tight_layout(rect=(0, 0.05, 1, 0.92), h_pad=4)
     plt.suptitle(f"Profili di carico dei PROSUMER nei cluster per {aggregate.title()}", fontsize=16, fontweight='bold')
