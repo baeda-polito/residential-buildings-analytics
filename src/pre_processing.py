@@ -14,7 +14,11 @@ def pre_process_power(data: pd.DataFrame, user_type: str, rated_power, rated_pv_
     if user_type == "consumer":
         data_pre_processed.loc[data_pre_processed["power"] < 0, "power"] = np.nan
     else:
-        data_pre_processed.loc[(data_pre_processed["power"] < -rated_pv_power * 1000) | (data_pre_processed["power"] > rated_power * 1000), "power"] = np.nan
+        if rated_pv_power is None:
+            min_value = -10000
+        else:
+            min_value = -rated_pv_power * 1000
+        data_pre_processed.loc[(data_pre_processed["power"] < min_value) | (data_pre_processed["power"] > -min_value), "power"] = np.nan
 
     data_pre_processed.loc[:, "power"] = replace_constant_values(data["power"], 4)
 
@@ -54,8 +58,14 @@ def pre_process_production_power(data: pd.DataFrame, weather_data: pd.DataFrame,
     # Convert index not reconstructable into a series True/False with data_model index
     index_not_reconstructable = data_model.index.isin(index_not_reconstructable)
     index_not_reconstructable = pd.Series(index_not_reconstructable, index=data_model.index)
+    data_model = data_model.drop(index_not_reconstructable.index)
 
-    outliers = (data_model["productionPower"] > pv_params["rated_power"] * 1000 * 1.1) | (data_model["productionPower"] < 0)
+    if physic_model:
+        max_value = pv_params["rated_power"] * 1000 * 1.1
+    else:
+        max_value = 10000
+
+    outliers = (data_model["productionPower"] > max_value) | (data_model["productionPower"] < 0)
     data_model.loc[outliers, "productionPower"] = np.nan
     index_not_phyisical = (data_model["productionPower"] < 10) & (data_model["ghi"] > 0)
     data_model.loc[index_not_phyisical, "productionPower"] = np.nan

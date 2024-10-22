@@ -1,4 +1,4 @@
-from src.api.smarthome import get_devices, get_data_device
+from src.api.smarthome import get_devices
 from src.pre_processing import pre_process_power, pre_process_production_power
 from settings import PROJECT_ROOT
 import os
