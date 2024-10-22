@@ -1,7 +1,7 @@
 import pandas as pd
 from src.building import load_anguillara, load_garda
 from scipy.spatial.distance import euclidean
-from src.benchmarking.utils import find_medoid_and_quartiles
+from src.benchmarking.utils import find_medioid_and_quartiles
 
 
 def calculate_medioids(aggregate: str):
@@ -55,7 +55,7 @@ def calculate_medioids(aggregate: str):
     df_consumer_pivot = df_consumer_pivot.drop(columns=["building_name", "date"])
 
     # Find medoid, Q1, and Q3 for consumers
-    medoid_consumer, q1_consumer, q3_consumer = find_medoid_and_quartiles(df_consumer_pivot, centroids_consumer_pivot)
+    medioid_consumer, q1_consumer, q3_consumer = find_medioid_and_quartiles(df_consumer_pivot, centroids_consumer_pivot)
 
     # For prosumers
     centroids_prosumer = df_prosumer.groupby(["cluster", "hour"])["Load_norm"].mean().reset_index()
@@ -67,14 +67,14 @@ def calculate_medioids(aggregate: str):
     df_prosumer_pivot = df_prosumer_pivot.drop(columns=["building_name", "date"])
 
     # Find medoid, Q1, and Q3 for prosumers
-    medoid_prosumer, q1_prosumer, q3_prosumer = find_medoid_and_quartiles(df_prosumer_pivot, centroids_prosumer_pivot)
+    medioid_prosumer, q1_prosumer, q3_prosumer = find_medioid_and_quartiles(df_prosumer_pivot, centroids_prosumer_pivot)
 
     # Save results to CSV
-    medoid_consumer.to_csv(f"../../results/medioid_{aggregate}_consumer.csv", index=True)
+    medioid_consumer.to_csv(f"../../results/medioid_{aggregate}_consumer.csv", index=True)
     q1_consumer.to_csv(f"../../results/q1_{aggregate}_consumer.csv", index=True)
     q3_consumer.to_csv(f"../../results/q3_{aggregate}_consumer.csv", index=True)
 
-    medoid_prosumer.to_csv(f"../../results/medioid_{aggregate}_prosumer.csv", index=True)
+    medioid_prosumer.to_csv(f"../../results/medioid_{aggregate}_prosumer.csv", index=True)
     q1_prosumer.to_csv(f"../../results/q1_{aggregate}_prosumer.csv", index=True)
     q3_prosumer.to_csv(f"../../results/q3_{aggregate}_prosumer.csv", index=True)
 

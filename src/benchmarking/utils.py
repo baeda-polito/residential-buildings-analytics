@@ -36,7 +36,7 @@ def calculate_shape_factor(data: pd.DataFrame) -> pd.DataFrame:
     return df_sf
 
 
-def find_medoid_and_quartiles(df_cluster, centroids_pivot):
+def find_medioid_and_quartiles(df_cluster, centroids_pivot):
     """
     Calcola i medioidi, il primo quartile (Q1) e il terzo quartile (Q3) dei profili in base alla distanza con il centroide del cluster.
     :param df_cluster: dataframe con i profili dei consumatori e prosumer
@@ -59,9 +59,9 @@ def find_medoid_and_quartiles(df_cluster, centroids_pivot):
         # Sort the profiles by distance
         sorted_profiles = distances.sort_values()
 
-        # Find the medoid (the profile with the minimum distance)
-        medoid_index = sorted_profiles.idxmin()
-        nearest_profiles[cluster_label] = df_cluster.loc[medoid_index]
+        # Find the medioid (the profile with the minimum distance)
+        medioid_index = sorted_profiles.idxmin()
+        nearest_profiles[cluster_label] = df_cluster.loc[medioid_index]
 
         # Find Q1 and Q3 based on sorted distances
         q1_index = sorted_profiles.index[int(len(sorted_profiles) * 0.25)]
@@ -70,12 +70,12 @@ def find_medoid_and_quartiles(df_cluster, centroids_pivot):
         q1_profiles[cluster_label] = df_cluster.loc[q1_index]
         q3_profiles[cluster_label] = df_cluster.loc[q3_index]
 
-    # Return medoid, Q1, and Q3 as DataFrames
-    medoid_df = pd.DataFrame(nearest_profiles).T.drop(columns=["cluster"]).astype(float)
+    # Return medioid, Q1, and Q3 as DataFrames
+    medioid_df = pd.DataFrame(nearest_profiles).T.drop(columns=["cluster"]).astype(float)
     q1_df = pd.DataFrame(q1_profiles).T.drop(columns=["cluster"]).astype(float)
     q3_df = pd.DataFrame(q3_profiles).T.drop(columns=["cluster"]).astype(float)
 
-    return medoid_df, q1_df, q3_df
+    return medioid_df, q1_df, q3_df
 
 def create_dataset_classification():
     pass

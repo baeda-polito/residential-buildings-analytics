@@ -3,6 +3,7 @@ import pandas as pd
 import os
 from settings import PROJECT_ROOT
 from src.building import Building, load_anguillara, load_garda
+from src.benchmarking.utils import find_medioid_and_quartiles
 import seaborn as sns
 
 
@@ -53,6 +54,14 @@ def plot_load_profiles_user(user_id: str, aggregate: str):
     cluster_labels = cluster.loc[cluster["user_type"] == building.building_info["user_type"], "cluster"].unique()
     cluster_labels.sort()
 
+    data_cluster_pivot = data_cluster.pivot(index=["date", "cluster"], columns="hour", values="Load").reset_index().drop(columns=["date"])
+
+    centroids = data_cluster.groupby(["hour", "cluster"])["Load"].mean().reset_index()
+    centroids_pivot = centroids.pivot(index="cluster", columns="hour", values="Load")
+
+    medioid, q1, q3 = find_medioid_and_quartiles(data_cluster_pivot, centroids_pivot)
+    medioid = medioid.reset_index(names=["cluster"]).melt(id_vars="cluster", var_name="hour", value_name="Load")
+
     fig, ax = plt.subplots(figsize=(12, 4), nrows=1, ncols=cluster_labels.size, sharey=True)
 
     palette = sns.color_palette("colorblind", cluster_labels.size)
@@ -70,27 +79,33 @@ def plot_load_profiles_user(user_id: str, aggregate: str):
         ax[i].set_xticks(range(0, 96, 16))
         ax[i].tick_params(axis='x', labelsize=9)
 
-    centroid_load_profiles = data_cluster[["hour", "Load", "cluster"]].groupby(["hour", "cluster"]).median()
-    centroid_load_profiles.reset_index(inplace=True)
-    q1 = data_cluster[["hour", "Load", "cluster"]].groupby(["hour", "cluster"]).quantile(0.25)
-    q1.reset_index(inplace=True)
-    q3 = data_cluster[["hour", "Load", "cluster"]].groupby(["hour", "cluster"]).quantile(0.75)
-    q3.reset_index(inplace=True)
+    # Calculate upper_bound and lower_bound as 1 std on each hour
+    total_load_profiles = data_cluster[["hour", "Load", "cluster"]]
+    total_load_profiles_std = total_load_profiles.groupby(["hour", "cluster"]).std().reset_index()
+
+    upper_bound = medioid.copy()
+    upper_bound["Load"] = (upper_bound["Load"] + total_load_profiles_std["Load"]).clip()
+
+    lower_bound = medioid.copy()
+    lower_bound["Load"] = (lower_bound["Load"] - total_load_profiles_std["Load"])
+    # Clip
+    lower_bound = lower_bound.merge(total_load_profiles.groupby("cluster")["Load"].min().reset_index(), on="cluster")
+    lower_bound["Load"] = lower_bound[["Load_x", "Load_y"]].max(axis=1)
+    lower_bound.drop(columns=["Load_x", "Load_y"], inplace=True)
 
     for j, cluster_label in enumerate(cluster_labels):
-        cluster_data = centroid_load_profiles[centroid_load_profiles["cluster"] == cluster_label]
-        cluster_q1 = q1[q1["cluster"] == cluster_label]
-        cluster_q3 = q3[q3["cluster"] == cluster_label]
+        cluster_data = medioid[medioid["cluster"] == cluster_label]
+        cluster_lower_bound = lower_bound[lower_bound["cluster"] == cluster_label]
+        cluster_upper_bound = upper_bound[upper_bound["cluster"] == cluster_label]
 
         color = palette[j]
-        ax[j].plot(cluster_data.set_index("hour")["Load"], color=color)
-        ax[j].fill_between(cluster_q1["hour"], cluster_q1.set_index("hour")["Load"],
-                           cluster_q3.set_index("hour")["Load"], color=color, alpha=0.3)
+        ax[j].plot(cluster_data.set_index("hour")["Load"], color=color, label="Centroid")
+        ax[j].fill_between(cluster_lower_bound["hour"], cluster_lower_bound.set_index("hour")["Load"],
+                           cluster_upper_bound.set_index("hour")["Load"], color=color, alpha=0.3)
 
-    plt.tight_layout(rect=(0, 0.01, 1, 0.92), h_pad=4)
-    plt.ylim(0, building.building_info["rated_power"] * 1000)
+    plt.tight_layout(rect=(0, 0.05, 1, 0.92), h_pad=4)
     plt.suptitle(f"Profili di carico divisi per cluster per l'utente {building.building_info['name']}",
-                 fontsize=16, fontweight='bold')
+                    fontsize=16, fontweight='bold')
     plt.savefig(os.path.join(PROJECT_ROOT, "figures", "clustering", f"load_profiles_{user_id}.png"))
 
 
@@ -283,3 +298,6 @@ def plot_cluster_percentage(aggregate: str):
 
 def plot_centroids(aggregate: str):
     pass
+
+
+plot_load_profiles_user("7436df46-294b-4c97-bd1b-8aaa3aed97c5", "anguillara")
