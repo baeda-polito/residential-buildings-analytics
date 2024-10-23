@@ -1,3 +1,4 @@
+import json
 import pandas as pd
 from src.building import load_anguillara, load_garda
 from scipy.spatial.distance import euclidean
@@ -13,8 +14,14 @@ def calculate_medioids(aggregate: str):
 
     # Load cluster data
     cluster = pd.read_csv(f"../../results/cluster_{aggregate}.csv")
-    cluster["cluster"] = cluster.apply(lambda row: 'C' + str(row['cluster']) if row['user_type'] == 'consumer' else 'P' + str(row['cluster']), axis=1)
     cluster["date"] = pd.to_datetime(cluster["date"]).dt.date
+
+    # Load the medioids
+    with open(f"../../results/medioids_{aggregate}_consumer.json", "r") as f:
+        medioids_consumer = json.load(f)
+
+    with open(f"../../results/medioids_{aggregate}_prosumer.json", "r") as f:
+        medioids_prosumer = json.load(f)
 
     building_list = []
 
@@ -40,43 +47,37 @@ def calculate_medioids(aggregate: str):
 
     # Concatenate all building data
     df = pd.concat(building_data_list)
+    df["date"] = df["timestamp"].dt.strftime("%Y-%m-%d")
 
     # Separate data for consumers and prosumers
     df_consumer = df[df["user_type"] == "consumer"]
     df_prosumer = df[df["user_type"] != "consumer"]
 
-    # For consumers
-    centroids_consumer = df_consumer.groupby(["cluster", "hour"])["Load_norm"].mean().reset_index()
-    centroids_consumer_pivot = centroids_consumer.pivot(index="cluster", columns="hour", values="Load_norm")
+    medioids_profile_consumer = {}
+    for cluster in medioids_consumer.keys():
+        medioid_cluster = df_consumer[(df_consumer["building_name"] == medioids_consumer[cluster]["building_name"]) & (df_consumer["date"] == medioids_consumer[cluster]["date"])]
+        medioid_cluster = medioid_cluster.pivot(index="date", columns="hour", values="Load_norm")
+        medioid_cluster.index = [cluster]
+        medioid_cluster = medioid_cluster.astype(float)
 
-    df_consumer_pivot = df_consumer.pivot(index=["building_name", "date"], columns="hour", values="Load_norm")
-    df_consumer_pivot.reset_index(inplace=True, level=[0, 1])
-    df_consumer_pivot = pd.merge(df_consumer_pivot, cluster[["building_name", "date", "cluster"]], on=["building_name", "date"], how="inner")
-    df_consumer_pivot = df_consumer_pivot.drop(columns=["building_name", "date"])
+        medioids_profile_consumer[cluster] = medioid_cluster
 
-    # Find medoid, Q1, and Q3 for consumers
-    medioid_consumer, q1_consumer, q3_consumer = find_medioid_and_quartiles(df_consumer_pivot, centroids_consumer_pivot)
+    medioids_profile_consumer = pd.concat(medioids_profile_consumer, axis=0, ignore_index=True)
+    medioids_profile_consumer.index = medioids_consumer.keys()
+    medioids_profile_consumer.to_csv(f"../../results/medioid_{aggregate}_consumer.csv", index=True)
 
-    # For prosumers
-    centroids_prosumer = df_prosumer.groupby(["cluster", "hour"])["Load_norm"].mean().reset_index()
-    centroids_prosumer_pivot = centroids_prosumer.pivot(index="cluster", columns="hour", values="Load_norm")
+    medioids_profile_prosumer = {}
+    for cluster in medioids_prosumer.keys():
+        medioid_cluster = df_prosumer[(df_prosumer["building_name"] == medioids_prosumer[cluster]["building_name"]) & (df_prosumer["date"] == medioids_prosumer[cluster]["date"])]
+        medioid_cluster = medioid_cluster.pivot(index="date", columns="hour", values="Load_norm")
+        medioid_cluster.index = [cluster]
+        medioid_cluster = medioid_cluster.astype(float)
 
-    df_prosumer_pivot = df_prosumer.pivot(index=["building_name", "date"], columns="hour", values="Load_norm")
-    df_prosumer_pivot.reset_index(inplace=True, level=[0, 1])
-    df_prosumer_pivot = pd.merge(df_prosumer_pivot, cluster[["building_name", "date", "cluster"]], on=["building_name", "date"], how="inner")
-    df_prosumer_pivot = df_prosumer_pivot.drop(columns=["building_name", "date"])
+        medioids_profile_prosumer[cluster] = medioid_cluster
 
-    # Find medoid, Q1, and Q3 for prosumers
-    medioid_prosumer, q1_prosumer, q3_prosumer = find_medioid_and_quartiles(df_prosumer_pivot, centroids_prosumer_pivot)
-
-    # Save results to CSV
-    medioid_consumer.to_csv(f"../../results/medioid_{aggregate}_consumer.csv", index=True)
-    q1_consumer.to_csv(f"../../results/q1_{aggregate}_consumer.csv", index=True)
-    q3_consumer.to_csv(f"../../results/q3_{aggregate}_consumer.csv", index=True)
-
-    medioid_prosumer.to_csv(f"../../results/medioid_{aggregate}_prosumer.csv", index=True)
-    q1_prosumer.to_csv(f"../../results/q1_{aggregate}_prosumer.csv", index=True)
-    q3_prosumer.to_csv(f"../../results/q3_{aggregate}_prosumer.csv", index=True)
+    medioids_profile_prosumer = pd.concat(medioids_profile_prosumer, axis=0, ignore_index=True)
+    medioids_profile_prosumer.index = medioids_prosumer.keys()
+    medioids_profile_prosumer.to_csv(f"../../results/medioid_{aggregate}_prosumer.csv", index=True)
 
 
 def assign_cluster(aggregate: str):
@@ -146,3 +147,7 @@ def assign_to_nearest_or_anomalous(load_profile, medioids, threshold=3):
         return "Anomalous"
 
     return closest_cluster
+
+
+calculate_medioids("anguillara")
+assign_cluster("anguillara")

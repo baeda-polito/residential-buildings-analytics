@@ -1,10 +1,12 @@
+import json
+
 from src.building import load_anguillara, load_garda
 from settings import PROJECT_ROOT
 from src.benchmarking import utils, viz
 import pandas as pd
 import os
 from sklearn.cluster import KMeans
-from sklearn.metrics import silhouette_score
+from sklearn.metrics import silhouette_score, pairwise_distances
 from sklearn.neighbors import LocalOutlierFactor
 
 
@@ -75,6 +77,22 @@ def run_clustering(aggregate: str):
     kmeans = KMeans(n_clusters=n_clusters, random_state=0)
     kmeans.fit(df_sf_total_norm.iloc[:, :-3])
     df_sf_total_norm["cluster"] = kmeans.labels_
+    df_sf_total_norm["cluster"] = df_sf_total_norm["cluster"].apply(lambda x: f"C{x}")
+
+    # Calculate the medioid of each cluster
+    medioids_consumer = {}
+    for cluster in df_sf_total_norm["cluster"].unique():
+        data_cluster = df_sf_total_norm[df_sf_total_norm["cluster"] == cluster].drop(columns=["building_name", "user_type", "user_id", "cluster"])
+        distances = pairwise_distances(data_cluster, metric="euclidean")
+
+        row_sums = distances.sum(axis=1)
+        medioid_index = row_sums.argmin()
+
+        medioid = df_sf_total_norm[df_sf_total_norm["cluster"] == cluster].reset_index(names="date").iloc[medioid_index]
+        medioid = medioid[["date", "building_name"]]
+        medioid["date"] = medioid["date"].strftime("%Y-%m-%d")
+
+        medioids_consumer[cluster] = medioid.to_dict()
 
     df_sf_consumer = df_sf_total_norm.copy()
 
@@ -114,8 +132,24 @@ def run_clustering(aggregate: str):
     kmeans = KMeans(n_clusters=n_clusters, random_state=0)
     kmeans.fit(df_sf_total_norm.iloc[:, :-3])
     df_sf_total_norm["cluster"] = kmeans.labels_
+    df_sf_total_norm["cluster"] = df_sf_total_norm["cluster"].apply(lambda x: f"P{x}")
 
     df_sf_producer = df_sf_total_norm.copy()
+
+    # Calculate the medioid of each cluster
+    medioids_prosumer = {}
+    for cluster in df_sf_total_norm["cluster"].unique():
+        data_cluster = df_sf_total_norm[df_sf_total_norm["cluster"] == cluster].drop(columns=["building_name", "user_type", "user_id", "cluster"])
+        distances = pairwise_distances(data_cluster, metric="euclidean")
+
+        row_sums = distances.sum(axis=1)
+        medioid_index = row_sums.argmin()
+
+        medioid = df_sf_total_norm[df_sf_total_norm["cluster"] == cluster].reset_index(names="date").iloc[medioid_index]
+        medioid = medioid[["date", "building_name"]]
+        medioid["date"] = medioid["date"].strftime("%Y-%m-%d")
+
+        medioids_prosumer[cluster] = medioid.to_dict()
 
     df_sf_total = pd.concat([df_sf_consumer, df_sf_producer])
     df_sf_total.reset_index(inplace=True, names=["date"])
@@ -123,3 +157,12 @@ def run_clustering(aggregate: str):
     df_sf_total[['date', 'building_name', "user_id", "user_type", 'cluster']].to_csv(
         os.path.join(PROJECT_ROOT, "results", f"cluster_{aggregate}.csv"),
         index=False)
+
+    # Save medioids in json
+    with open(os.path.join(PROJECT_ROOT, "results", f"medioids_{aggregate}_consumer.json"), "w") as f:
+        json.dump(medioids_consumer, f)
+
+    with open(os.path.join(PROJECT_ROOT, "results", f"medioids_{aggregate}_prosumer.json"), "w") as f:
+        json.dump(medioids_prosumer, f)
+
+run_clustering("anguillara")

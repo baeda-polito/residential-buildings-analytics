@@ -58,18 +58,14 @@ def plot_load_profiles_user(user_id: str, aggregate: str):
         cluster_labels = cluster_labels[cluster_labels != "Anomalous"]
     cluster_labels.sort()
 
-    data_cluster_pivot = data_cluster.pivot(index=["date", "cluster"], columns="hour", values="Load").reset_index().drop(columns=["date"])
-
     centroids = data_cluster.groupby(["hour", "cluster"])["Load"].mean().reset_index()
-    centroids_pivot = centroids.pivot(index="cluster", columns="hour", values="Load")
-
-    medioid, q1, q3 = find_medioid_and_quartiles(data_cluster_pivot, centroids_pivot)
-    medioid = medioid.reset_index(names=["cluster"]).melt(id_vars="cluster", var_name="hour", value_name="Load")
+    q1 = data_cluster.groupby(["hour", "cluster"])["Load"].quantile(0.25).reset_index()
+    q3 = data_cluster.groupby(["hour", "cluster"])["Load"].quantile(0.75).reset_index()
 
     fig, ax = plt.subplots(figsize=(14, 4), nrows=1, ncols=(cluster_labels.size + 1), sharey=True)
-
     palette = sns.color_palette("colorblind", cluster_labels.size)
 
+    # Adding the profiles
     for i, cluster_label in enumerate(cluster_labels):
         data_cluster_viz = data_cluster[data_cluster["cluster"] == cluster_label]
         data_cluster_viz_grouped = data_cluster_viz.groupby("date")
@@ -83,29 +79,19 @@ def plot_load_profiles_user(user_id: str, aggregate: str):
         ax[i].set_xticks(range(0, 96, 16))
         ax[i].tick_params(axis='x', labelsize=8)
 
-    # Calculate upper_bound and lower_bound as 1 std on each hour
-    total_load_profiles = data_cluster[["hour", "Load", "cluster"]]
-    total_load_profiles_std = total_load_profiles.groupby(["hour", "cluster"]).std().reset_index()
-
-    upper_bound = medioid.copy()
-    upper_bound["Load"] = (upper_bound["Load"] + total_load_profiles_std["Load"]).clip()
-
-    lower_bound = medioid.copy()
-    lower_bound["Load"] = (lower_bound["Load"] - total_load_profiles_std["Load"])
-    # Clip
-    lower_bound = lower_bound.merge(total_load_profiles.groupby("cluster")["Load"].min().reset_index(), on="cluster")
-    lower_bound["Load"] = lower_bound[["Load_x", "Load_y"]].max(axis=1)
-    lower_bound.drop(columns=["Load_x", "Load_y"], inplace=True)
-
+    # Adding the centroids
     for j, cluster_label in enumerate(cluster_labels):
-        cluster_data = medioid[medioid["cluster"] == cluster_label]
-        cluster_lower_bound = lower_bound[lower_bound["cluster"] == cluster_label]
-        cluster_upper_bound = upper_bound[upper_bound["cluster"] == cluster_label]
+        cluster_data = centroids[centroids["cluster"] == cluster_label]
+
+        if data_cluster[data_cluster["cluster"] == cluster_label].shape[0] > 96:
+            cluster_lower_bound = q1[q1["cluster"] == cluster_label]
+            cluster_upper_bound = q3[q3["cluster"] == cluster_label]
 
         color = palette[j]
         ax[j].plot(cluster_data.set_index("hour")["Load"], color=color, label="Centroid")
-        ax[j].fill_between(cluster_lower_bound["hour"], cluster_lower_bound.set_index("hour")["Load"],
-                           cluster_upper_bound.set_index("hour")["Load"], color=color, alpha=0.3)
+        if data_cluster[data_cluster["cluster"] == cluster_label].shape[0] > 96:
+            ax[j].fill_between(cluster_lower_bound["hour"], cluster_lower_bound.set_index("hour")["Load"],
+                               cluster_upper_bound.set_index("hour")["Load"], color=color, alpha=0.3)
 
     # Adding the anomalous profiles
     if "Anomalous" in data_cluster["cluster"].unique():
@@ -496,3 +482,41 @@ def plot_feature_distribution(aggregate: str):
     plt.tight_layout(rect=(0, 0.05, 1, 0.92))
     plt.savefig(os.path.join(PROJECT_ROOT, "figures", "clustering", "feature_distribution",
                              f"violin_{aggregate}_prosumer.png"))
+
+
+def plot_cluster_population(aggregate: str):
+    """
+    Grafica la popolazione dei cluster per consumer e prosumer con un bar plot diviso per cluster e ordinato dal maggiore
+    al minore
+    :param aggregate: il nome dell'aggregato ("anguillara" o "garda")
+    :return:
+    """
+
+    cluster = pd.read_csv(os.path.join(PROJECT_ROOT, "results", f"cluster_{aggregate}_assigned.csv"))
+    cluster = cluster[cluster["cluster"] != "Anomalous"]
+
+    cluster_consumer = cluster[cluster["user_type"] == "consumer"]
+    cluster_count = cluster_consumer.groupby("cluster").size().sort_index()
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sns.barplot(x=cluster_count.values, y=cluster_count.index, ax=ax, palette="colorblind")
+    ax.set_xlabel("Numero di profili", fontsize=14)
+    ax.set_ylabel("Cluster", fontsize=14)
+    plt.title(f"Popolazione dei cluster per i CONSUMER in {aggregate.title()}", fontsize=16, fontweight='bold')
+    plt.tight_layout()
+    plt.savefig(os.path.join(PROJECT_ROOT, "figures", "clustering", f"cluster_population_{aggregate}_consumer.png"))
+
+    cluster_prosumer = cluster[cluster["user_type"] != "consumer"]
+    cluster_count = cluster_prosumer.groupby("cluster").size().sort_index()
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sns.barplot(x=cluster_count.values, y=cluster_count.index, ax=ax, palette="colorblind")
+    ax.set_xlabel("Numero di profili", fontsize=14)
+    ax.set_ylabel("Cluster", fontsize=14)
+    plt.title(f"Popolazione dei cluster per i PROSUMER in {aggregate.title()}", fontsize=16, fontweight='bold')
+    plt.tight_layout()
+    plt.savefig(os.path.join(PROJECT_ROOT, "figures", "clustering", f"cluster_population_{aggregate}_prosumer.png"))
+
+
+plot_cluster_population("anguillara")
+
