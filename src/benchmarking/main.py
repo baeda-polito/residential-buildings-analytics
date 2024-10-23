@@ -2,7 +2,7 @@ import json
 from src.benchmarking.clustering import run_clustering
 from src.benchmarking.assign import calculate_medioids, assign_cluster
 from src.benchmarking.viz import (plot_load_profiles_user, plot_load_profiles_aggregate,
-                                  plot_cluster_percentage)
+                                  plot_cluster_percentage, plot_feature_distribution)
 
 
 def run_benchmarking(aggregate: str):
@@ -19,6 +19,7 @@ def run_benchmarking(aggregate: str):
     assign_cluster(aggregate)
     plot_load_profiles_aggregate(aggregate)
     plot_cluster_percentage(aggregate)
+    plot_feature_distribution(aggregate)
 
     for building in building_list:
         plot_load_profiles_user(building["id"], aggregate)

@@ -5,6 +5,7 @@ import pandas as pd
 import os
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
+from sklearn.neighbors import LocalOutlierFactor
 
 
 def run_clustering(aggregate: str):
@@ -44,6 +45,13 @@ def run_clustering(aggregate: str):
     df_sf_total_norm = df_sf_total.copy()
     df_sf_total_norm = df_sf_total_norm[df_sf_total_norm["user_type"] == "consumer"]
     df_sf_total_reset = df_sf_total_norm.reset_index()
+
+    # Outlier detection with LOF
+    lof = LocalOutlierFactor(n_neighbors=50)
+    outliers = lof.fit_predict(df_sf_total_reset.set_index("index").drop(columns=["building_name", "user_type", "user_id"]))
+    outliers_index = df_sf_total_reset.index[outliers == -1].tolist()
+    df_sf_total_reset = df_sf_total_reset.drop(outliers_index)
+
     # Min-max normalization
     df_sf_total_reset.iloc[:, 1:12] = (df_sf_total_reset.iloc[:, 1:12] - df_sf_total_reset.iloc[:, 1:12].min()) / (
                 df_sf_total_reset.iloc[:, 1:12].max() - df_sf_total_reset.iloc[:, 1:12].min())
@@ -77,6 +85,13 @@ def run_clustering(aggregate: str):
     df_sf_total_norm = df_sf_total.copy()
     df_sf_total_norm = df_sf_total_norm[df_sf_total_norm["user_type"] != "consumer"]
     df_sf_total_reset = df_sf_total_norm.reset_index()
+
+    lof = LocalOutlierFactor(n_neighbors=50)
+    outliers = lof.fit_predict(
+        df_sf_total_reset.set_index("index").drop(columns=["building_name", "user_type", "user_id"]))
+    outliers_index = df_sf_total_reset.index[outliers == -1].tolist()
+    df_sf_total_reset = df_sf_total_reset.drop(outliers_index)
+
     df_sf_total_reset.iloc[:, 1:12] = (df_sf_total_reset.iloc[:, 1:12] - df_sf_total_reset.iloc[:, 1:12].min()) / (
                 df_sf_total_reset.iloc[:, 1:12].max() - df_sf_total_reset.iloc[:, 1:12].min())
     df_sf_total_norm = df_sf_total_reset.set_index("index")

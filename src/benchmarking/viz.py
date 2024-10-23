@@ -1,10 +1,11 @@
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+import seaborn as sns
 import pandas as pd
 import os
 from settings import PROJECT_ROOT
 from src.building import Building, load_anguillara, load_garda
-from src.benchmarking.utils import find_medioid_and_quartiles
-import seaborn as sns
+from src.benchmarking.utils import find_medioid_and_quartiles, calculate_shape_factor
 
 
 def plot_silhouette_scores(scores: pd.DataFrame):
@@ -78,7 +79,7 @@ def plot_load_profiles_user(user_id: str, aggregate: str):
 
         ax[i].set_title(f"Cluster {cluster_label}")
         ax[i].set_xlabel("Ora del giorno")
-        ax[i].set_ylabel("Potenza [kW]")
+        ax[i].set_ylabel("Potenza [W]")
         ax[i].set_xticks(range(0, 96, 16))
         ax[i].tick_params(axis='x', labelsize=8)
 
@@ -111,10 +112,10 @@ def plot_load_profiles_user(user_id: str, aggregate: str):
         data_anomalous = data_cluster[data_cluster["cluster"] == "Anomalous"]
         data_anomalous_grouped = data_anomalous.groupby("date")
         for date, group in data_anomalous_grouped:
-            ax[j+1].plot(group["hour"], group["Load"], color='red', alpha=1, linewidth=0.5)
+            ax[j+1].plot(group["hour"], group["Load"], color='red', alpha=0.3, linewidth=0.5)
     ax[j+1].set_title("Anomalous")
     ax[j+1].set_xlabel("Ora del giorno")
-    ax[j+1].set_ylabel("Potenza [kW]")
+    ax[j+1].set_ylabel("Potenza [W]")
     ax[j+1].set_xticks(range(0, 96, 16))
     ax[j+1].tick_params(axis='x', labelsize=8)
 
@@ -212,6 +213,41 @@ def plot_load_profiles_aggregate(aggregate: str):
     plt.suptitle(f"Profili di carico dei CONSUMER nei cluster per {aggregate.title()}", fontsize=16, fontweight='bold')
     plt.savefig(os.path.join(PROJECT_ROOT, "figures", "clustering", f"load_profiles_{aggregate}_consumer.png"))
 
+    # Same figure but showing the centroid
+    fig, ax = plt.subplots(figsize=(12, 4), nrows=1, ncols=cluster_labels_consumer.size, sharey=True)
+    palette = sns.color_palette("colorblind", cluster_labels_consumer.size)
+
+    for building in building_data_list:
+        for i, cluster_label in enumerate(cluster_labels_consumer):
+            data_cluster = building[building["cluster"] == cluster_label]
+            data_cluster_grouped = data_cluster.groupby("date")
+
+            for date, group in data_cluster_grouped:
+                ax[i].plot(group["hour"], group["Load_norm"], color=palette[i], alpha=0.1, linewidth=0.1)
+            ax[i].set_title(f"Cluster {cluster_label}")
+            ax[i].set_xlabel("Ora del giorno")
+            ax[i].set_ylabel("Potenza normalizzata [-]")
+            ax[i].set_xticks(range(0, 96, 16))
+            ax[i].tick_params(axis='x', labelsize=9)
+
+    centroids = total_load_profiles.groupby(["hour", "cluster"])["Load_norm"].mean().reset_index()
+    q1 = total_load_profiles.groupby(["hour", "cluster"])["Load_norm"].quantile(0.25).reset_index()
+    q3 = total_load_profiles.groupby(["hour", "cluster"])["Load_norm"].quantile(0.75).reset_index()
+
+    for j, cluster_label in enumerate(cluster_labels_consumer):
+        cluster_data = centroids[centroids["cluster"] == cluster_label]
+        cluster_lower_bound = q1[q1["cluster"] == cluster_label]
+        cluster_upper_bound = q3[q3["cluster"] == cluster_label]
+
+        color = palette[j]
+        ax[j].plot(cluster_data.set_index("hour")["Load_norm"], color=color, label="Centroid Consumer")
+        ax[j].fill_between(cluster_lower_bound["hour"], cluster_lower_bound.set_index("hour")["Load_norm"],
+                           cluster_upper_bound.set_index("hour")["Load_norm"], color=color, alpha=0.3)
+
+    plt.tight_layout(rect=(0, 0.05, 1, 0.92), h_pad=4)
+    plt.suptitle(f"Profili di carico dei CONSUMER nei cluster per {aggregate.title()}", fontsize=16, fontweight='bold')
+    plt.savefig(os.path.join(PROJECT_ROOT, "figures", "clustering", f"load_profiles_{aggregate}_consumer_centroids.png"))
+
     fig, ax = plt.subplots(figsize=(12, 4), nrows=1, ncols=cluster_labels_prosumer.size, sharey=True)
     palette = sns.color_palette("colorblind", cluster_labels_prosumer.size)
 
@@ -241,6 +277,41 @@ def plot_load_profiles_aggregate(aggregate: str):
     plt.tight_layout(rect=(0, 0.05, 1, 0.92), h_pad=4)
     plt.suptitle(f"Profili di carico dei PROSUMER nei cluster per {aggregate.title()}", fontsize=16, fontweight='bold')
     plt.savefig(os.path.join(PROJECT_ROOT, "figures", "clustering", f"load_profiles_{aggregate}_prosumer.png"))
+
+    # Same figure but showing the centroid
+    fig, ax = plt.subplots(figsize=(12, 4), nrows=1, ncols=cluster_labels_prosumer.size, sharey=True)
+    palette = sns.color_palette("colorblind", cluster_labels_prosumer.size)
+
+    for building in building_data_list:
+        for i, cluster_label in enumerate(cluster_labels_prosumer):
+            data_cluster = building[building["cluster"] == cluster_label]
+            data_cluster_grouped = data_cluster.groupby("date")
+
+            for date, group in data_cluster_grouped:
+                ax[i].plot(group["hour"], group["Load_norm"], color=palette[i], alpha=0.1, linewidth=0.1)
+            ax[i].set_title(f"Cluster {cluster_label}")
+            ax[i].set_xlabel("Ora del giorno")
+            ax[i].set_ylabel("Potenza normalizzata [-]")
+            ax[i].set_xticks(range(0, 96, 16))
+            ax[i].tick_params(axis='x', labelsize=9)
+
+    centroids = total_load_profiles.groupby(["hour", "cluster"])["Load_norm"].mean().reset_index()
+    q1 = total_load_profiles.groupby(["hour", "cluster"])["Load_norm"].quantile(0.25).reset_index()
+    q3 = total_load_profiles.groupby(["hour", "cluster"])["Load_norm"].quantile(0.75).reset_index()
+
+    for j, cluster_label in enumerate(cluster_labels_prosumer):
+        cluster_data = centroids[centroids["cluster"] == cluster_label]
+        cluster_lower_bound = q1[q1["cluster"] == cluster_label]
+        cluster_upper_bound = q3[q3["cluster"] == cluster_label]
+
+        color = palette[j]
+        ax[j].plot(cluster_data.set_index("hour")["Load_norm"], color=color, label="Centroid Consumer")
+        ax[j].fill_between(cluster_lower_bound["hour"], cluster_lower_bound.set_index("hour")["Load_norm"],
+                            cluster_upper_bound.set_index("hour")["Load_norm"], color=color, alpha=0.3)
+
+    plt.tight_layout(rect=(0, 0.05, 1, 0.92), h_pad=4)
+    plt.suptitle(f"Profili di carico dei PROSUMER nei cluster per {aggregate.title()}", fontsize=16, fontweight='bold')
+    plt.savefig(os.path.join(PROJECT_ROOT, "figures", "clustering", f"load_profiles_{aggregate}_prosumer_centroids.png"))
 
 
 def plot_cluster_percentage(aggregate: str):
@@ -322,5 +393,106 @@ def plot_cluster_percentage(aggregate: str):
     plt.savefig(os.path.join(PROJECT_ROOT, "figures", "clustering", f"cluster_percentage_{aggregate}_prosumer.png"))
 
 
-def plot_centroids(aggregate: str):
-    pass
+def plot_feature_distribution(aggregate: str):
+
+    building_list = []
+    if aggregate == "anguillara":
+        building_list = load_anguillara()
+    elif aggregate == "garda":
+        building_list = load_garda()
+
+    cluster = pd.read_csv(os.path.join(PROJECT_ROOT, "results", f"cluster_{aggregate}_assigned.csv"))
+    cluster = cluster[cluster["cluster"] != "Anomalous"]
+    cluster["date"] = pd.to_datetime(cluster["date"]).dt.date
+
+    building_sf_dict = {}
+    for building in building_list:
+        data = building.energy_meter.data.copy()
+        data.set_index("timestamp", inplace=True)
+        data = data["Load"].clip(lower=0)
+        data = data.resample("1H").mean()
+        df_sf = calculate_shape_factor(data)
+        df_sf["building_name"] = building.building_info["name"]
+        df_sf["user_type"] = building.building_info["user_type"]
+        building_sf_dict[building.building_info["name"]] = df_sf
+
+    df_sf_total = pd.concat(building_sf_dict.values())
+    df_sf_total.reset_index(inplace=True, names="date")
+
+    data = pd.merge(df_sf_total,
+                    cluster[["date", "cluster", "building_name"]],
+                    on=["date", "building_name"],
+                    how="inner")
+
+    data_consumer = data[data["user_type"] == "consumer"]
+    consumer_labels = data_consumer["cluster"].unique()
+    consumer_labels.sort()
+
+    fig, axes = plt.subplots(figsize=(12, 8), nrows=4, ncols=4)
+    for i, column in enumerate(data_consumer.columns[1:-3]):
+        ax = axes[i // 4, i % 4]
+        sns.kdeplot(data=data_consumer, x=column, hue="cluster", ax=ax, fill=True, palette="colorblind",
+                    common_norm=False, legend=False)
+        # ax.set_title(f"Distribuzione di {column}", fontsize=14)
+        ax.set_xlabel(column)
+        ax.set_ylabel("Density")
+    fig.legend(loc='lower center', bbox_to_anchor=(0.5, 0.01), ncol=len(data_consumer["cluster"].unique()),
+               fancybox=True, shadow=True, labels=consumer_labels)
+    plt.suptitle("Distribuzione degli indicatori di forma per i CONSUMER", fontsize=16, fontweight='bold')
+    plt.tight_layout(rect=(0, 0.05, 1, 0.92))
+    plt.savefig(
+        os.path.join(PROJECT_ROOT, "figures", "clustering", "feature_distribution", f"dist_{aggregate}_consumer.png"))
+
+    fig, axes = plt.subplots(figsize=(12, 10), nrows=4, ncols=4)
+    for i, column in enumerate(data_consumer.columns[1:-3]):
+        ax = axes[i // 4, i % 4]
+        sns.violinplot(data=data_consumer, y="cluster", x=column, ax=ax, palette="colorblind", inner="box",
+                       common_norm=True, legend=False, alpha=0.7)
+        ax.set_xlabel(column)
+        ax.set_ylabel("Cluster")
+
+    palette = sns.color_palette("colorblind", n_colors=len(consumer_labels))
+    palette = [(r, g, b, 0.7) for r, g, b in palette]
+    handles = [Line2D([0], [0], color=palette[i], lw=4) for i in range(len(consumer_labels))]
+    fig.legend(handles=handles, labels=consumer_labels.tolist(), loc='lower center', bbox_to_anchor=(0.5, 0.01),
+               ncol=len(consumer_labels), fancybox=True, shadow=True)
+    plt.suptitle("Distribuzione degli indicatori di forma per i CONSUMER", fontsize=16, fontweight='bold')
+    plt.tight_layout(rect=(0, 0.05, 1, 0.92))
+    plt.savefig(os.path.join(PROJECT_ROOT, "figures", "clustering", "feature_distribution",
+                             f"violin_{aggregate}_consumer.png"))
+
+    data_prosumer = data[data["user_type"] != "consumer"]
+    prosumer_labels = data_prosumer["cluster"].unique()
+    prosumer_labels.sort()
+
+    fig, axes = plt.subplots(figsize=(12, 8), nrows=4, ncols=4)
+    for i, column in enumerate(data_prosumer.columns[1:-3]):
+        ax = axes[i // 4, i % 4]
+        sns.kdeplot(data=data_prosumer, x=column, hue="cluster", ax=ax, fill=True, palette="colorblind",
+                    common_norm=False, legend=False)
+        # ax.set_title(f"Distribuzione di {column}", fontsize=14)
+        ax.set_xlabel(column)
+        ax.set_ylabel("Density")
+    fig.legend(loc='lower center', bbox_to_anchor=(0.5, 0.01), ncol=len(data_prosumer["cluster"].unique()),
+               fancybox=True, shadow=True, labels=prosumer_labels)
+    plt.suptitle("Distribuzione degli indicatori di forma per i PROSUMER", fontsize=16, fontweight='bold')
+    plt.tight_layout(rect=(0, 0.05, 1, 0.92))
+    plt.savefig(os.path.join(PROJECT_ROOT, "figures", "clustering", "feature_distribution", f"dist_{aggregate}_prosumer.png"))
+
+    fig, axes = plt.subplots(figsize=(12, 10), nrows=4, ncols=4)
+    for i, column in enumerate(data_prosumer.columns[1:-3]):
+        ax = axes[i // 4, i % 4]
+        sns.violinplot(data=data_prosumer, y="cluster", x=column, ax=ax, palette="colorblind", inner="box",
+                       common_norm=True, legend=False, alpha=0.7)
+        ax.set_xlabel(column)
+        ax.set_ylabel("Cluster")
+
+    palette = sns.color_palette("colorblind", n_colors=len(prosumer_labels))
+    palette = [(r, g, b, 0.7) for r, g, b in palette]
+    handles = [Line2D([0], [0], color=palette[i], lw=4) for i in range(len(consumer_labels))]
+    fig.legend(handles=handles, labels=prosumer_labels.tolist(), loc='lower center', bbox_to_anchor=(0.5, 0.01),
+               ncol=len(prosumer_labels), fancybox=True, shadow=True)
+    plt.suptitle("Distribuzione degli indicatori di forma per i CONSUMER", fontsize=16, fontweight='bold')
+    plt.tight_layout(rect=(0, 0.05, 1, 0.92))
+    plt.savefig(os.path.join(PROJECT_ROOT, "figures", "clustering", "feature_distribution",
+                             f"violin_{aggregate}_prosumer.png"))
