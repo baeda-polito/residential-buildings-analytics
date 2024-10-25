@@ -37,14 +37,3 @@ def get_operating_hours(data: pd.DataFrame, building_cluster: pd.DataFrame):
     data.loc[data["weekday"] >= 5, "day_type"] = "WEEKEND"
 
     return data[["timestamp", "Load", "operating_type", "day_type"]]
-
-
-if __name__ == "__main__":
-    from src.building import load_anguillara
-    cluster = pd.read_csv("../../results/cluster_anguillara_assigned.csv")
-
-    anguillara = load_anguillara()
-
-    for building in anguillara:
-        building_cluster = cluster[cluster["building_name"] == building.building_info["name"]]
-        print(get_operating_hours(building.energy_meter.data, building_cluster))

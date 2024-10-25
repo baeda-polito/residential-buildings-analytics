@@ -1,0 +1,54 @@
+{
+  "off_impact": {
+    "name": "Off Impact",
+    "uom": "Percentuale [%]"
+  },
+  "on_impact": {
+    "name": "On Impact",
+    "uom": "Percentuale [%]"
+  },
+  "weekend_impact": {
+    "name": "Weekend Impact",
+    "uom": "Percentuale [%]"
+  },
+  "load_factor": {
+    "name": "Fattore di carico",
+    "uom": "Valore normalizzato [-]"
+  },
+  "flexibility_factor": {
+    "name": "Fattore di flessibilita",
+    "uom": "Valore normalizzato [-]"
+  },
+  "load_volatility": {
+    "name": "Volatilita del carico",
+    "uom": "Potenza [kW]"
+  },
+  "self_sufficiency": {
+    "name": "Auto-sufficienza",
+    "uom": "Percentuale [%]"
+  },
+  "self_consumption": {
+    "name": "Autoconsumo",
+    "uom": "Percentuale [%]"
+  },
+  "self_sufficiency_potential": {
+    "name": "Potenziale di auto-sufficienza",
+    "uom": "Percentuale [%]"
+  },
+  "additional_self_sufficiency": {
+    "name": "Auto-sufficienza aggiuntiva",
+    "uom": "Percentuale [%]"
+  },
+  "loss_of_load_probability": {
+    "name": "Probabilita di perdita di carico",
+    "uom": "Percentuale [%]"
+  },
+  "energy_autonomy": {
+    "name": "Autonomia energetica",
+    "uom": "Percentuale [%]"
+  },
+  "on_site_generation_ratio": {
+    "name": "Rapporto di generazione sul posto",
+    "uom": "Percentuale+ [%]"
+  }
+}

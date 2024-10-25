@@ -121,14 +121,16 @@ def calculate_kpi_flexibility(user_id: str, aggregate: str):
 
     daily_load_factor = []
     daily_flexibility_factor = []
+    daily_load_volatility = []
 
     for date, data_daily in data_grouped:
         daily_load_factor.append((date, load_factor(data_daily)))
         daily_flexibility_factor.append((date, flexibility_factor(data_daily)))
+        daily_load_volatility.append((date, load_volatility(data_daily)))
 
-    # Create a dataframe with the daily KPIs
     daily_kpi = pd.DataFrame(daily_load_factor, columns=["date", "load_factor"])
     daily_kpi["flexibility_factor"] = pd.DataFrame(daily_flexibility_factor)[1]
+    daily_kpi["load_volatility"] = pd.DataFrame(daily_load_volatility)[1]
 
     return {
         "aggregate_kpi": {

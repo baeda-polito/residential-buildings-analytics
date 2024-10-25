@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 
 def eui(data: pd.DataFrame, surface: float):
@@ -76,9 +77,13 @@ def weekend_impact(data_operation: pd.DataFrame):
     :return: il valore di Weekend-Impact
     """
 
-    energy_weekend = (data_operation[(data_operation["day_type"] == "WEEKEND") & (data_operation["operating_type"] == "ON")]["Load"] * 0.25).sum()
-    energy_total = (data_operation["Load"] * 0.25).sum()
-    weekend_impact = energy_weekend / energy_total * 100
+    # Check if at least one weekend day is present in the dataset
+    if (data_operation["day_type"] == "WEEKEND").any():
+        energy_weekend = (data_operation[(data_operation["day_type"] == "WEEKEND") & (data_operation["operating_type"] == "ON")]["Load"] * 0.25).sum()
+        energy_total = (data_operation["Load"] * 0.25).sum()
+        weekend_impact = energy_weekend / energy_total * 100
+    else:
+        weekend_impact = np.nan
 
     return weekend_impact
 
