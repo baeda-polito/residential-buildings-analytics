@@ -1,5 +1,6 @@
 import pandas as pd
-from src.building import Building
+import json
+from src.building import Building, load_anguillara, load_garda
 from src.utils.operating_hours import get_operating_hours
 from src.kpi.kpi_function import (eui, normalized_eui, percentage_anomalies, off_impact, on_impact, weekend_impact,
                                   self_consumption, self_sufficiency, self_sufficiency_potential,
@@ -47,7 +48,8 @@ def calculate_kpi_load(user_id: str, aggregate: str):
             "eui_normalized": kpi_eui_normalized,
             "percentage_anomalies": kpi_percentage_anomalies,
             "on_impact": daily_kpi["on_impact"].mean(),
-            "off_impact": daily_kpi["off_impact"].mean()
+            "off_impact": daily_kpi["off_impact"].mean(),
+            "weekend_impact": daily_kpi["weekend_impact"].mean()
         },
         "daily_kpi": daily_kpi
     }
@@ -92,7 +94,7 @@ def calculate_kpi_renewable(user_id: str, aggregate: str):
     daily_kpi["on_site_generation_ratio"] = pd.DataFrame(daily_on_site_generation_ratio)[1]
 
     return {
-        "aggregate_kpi": {
+        "aggregated_kpi": {
             "self_consumption": daily_kpi["self_consumption"].mean(),
             "self_sufficiency": daily_kpi["self_sufficiency"].mean(),
             "self_sufficiency_potential": daily_kpi["self_sufficiency_potential"].mean(),
@@ -133,7 +135,7 @@ def calculate_kpi_flexibility(user_id: str, aggregate: str):
     daily_kpi["load_volatility"] = pd.DataFrame(daily_load_volatility)[1]
 
     return {
-        "aggregate_kpi": {
+        "aggregated_kpi": {
             "load_volatility": kpi_load_volatility,
             "load_factor": daily_kpi["load_factor"].mean(),
             "flexibility_factor": daily_kpi["flexibility_factor"].mean()
@@ -141,3 +143,112 @@ def calculate_kpi_flexibility(user_id: str, aggregate: str):
         "daily_kpi": daily_kpi
     }
 
+
+def calculate_performance_score_user(user_id: str, aggregate: str):
+    """
+    Calcola il punteggio di performance di un utente per tutti i KPI.
+    :param user_id: id dell'utente
+    :param aggregate: il nome dell'aggregato ("anguillara" o "garda")
+    :return: il dataframe con i KPI e i relativi punteggi
+    """
+
+    building = Building(user_id, aggregate, pre_process=False)
+
+    kpi_load = calculate_kpi_load(user_id, aggregate)["aggregated_kpi"]
+    kpi_flexibility = calculate_kpi_flexibility(user_id, aggregate)["aggregated_kpi"]
+
+    if building.building_info["user_type"] != "consumer":
+        kpi_renewable = calculate_kpi_renewable(user_id, aggregate)["aggregated_kpi"]
+    else:
+        kpi_renewable = {
+            "self_consumption": 0,
+            "self_sufficiency": 0,
+            "self_sufficiency_potential": 0,
+            "additional_self_sufficiency": 100,
+            "loss_of_load_probability": 100,
+            "energy_autonomy": 0,
+            "on_site_generation_ratio": 0
+        }
+
+    with open("config.json", "r") as f:
+        config = json.load(f)
+
+    # Create a score_dict where each key, that has the name of the KPI, has a dict with "name" and "value"
+    score_dict = {}
+    score_dict["percentage_anomalies"] = {
+        "name": config["percentage_anomalies"]["name"],
+        "value": 100 - kpi_load["percentage_anomalies"]
+    }
+    score_dict["off_impact"] = {
+        "name": config["off_impact"]["name"],
+        "value": kpi_load["off_impact"]
+    }
+    score_dict["on_impact"] = {
+        "name": config["on_impact"]["name"],
+        "value": kpi_load["on_impact"]
+    }
+    score_dict["weekend_impact"] = {
+        "name": config["weekend_impact"]["name"],
+        "value": kpi_load["weekend_impact"]
+    }
+    score_dict["self_consumption"] = {
+        "name": config["self_consumption"]["name"],
+        "value": kpi_renewable["self_consumption"]
+    }
+    score_dict["self_sufficiency"] = {
+        "name": config["self_sufficiency"]["name"],
+        "value": kpi_renewable["self_sufficiency"]
+    }
+    score_dict["additional_self_sufficiency"] = {
+        "name": config["additional_self_sufficiency"]["name"],
+        "value": 100 - kpi_renewable["additional_self_sufficiency"]
+    }
+    score_dict["loss_of_load_probability"] = {
+        "name": config["loss_of_load_probability"]["name"],
+        "value": 100 - kpi_renewable["loss_of_load_probability"]
+    }
+    score_dict["energy_autonomy"] = {
+        "name": config["energy_autonomy"]["name"],
+        "value": kpi_renewable["energy_autonomy"]
+    }
+    score_dict["load_volatility"] = {
+        "name": config["load_volatility"]["name"],
+        "value": kpi_flexibility["load_volatility"]
+    }
+    score_dict["load_factor"] = {
+        "name": config["load_factor"]["name"],
+        "value": (1 - kpi_flexibility["load_factor"]) * 100
+    }
+    score_dict["flexibility_factor"] = {
+        "name": config["flexibility_factor"]["name"],
+        "value": kpi_flexibility["flexibility_factor"] * 100
+    }
+
+    score_df = pd.DataFrame(score_dict).transpose().reset_index(names="kpi")
+
+    return score_df
+
+
+def calculate_performance_score_aggregate(aggregate: str):
+    """
+    Calcola il punteggio di performance per tutti gli utenti dell'aggregato.
+    :param aggregate: il nome dell'aggregato ("anguillara" o "garda")
+    :return: il dataframe con i KPI e i relativi punteggi
+    """
+
+    building_list = []
+    if aggregate == "anguillara":
+        building_list = load_anguillara()
+    elif aggregate == "garda":
+        building_list = load_garda()
+
+    score_list = []
+    for building in building_list:
+        df_score_user = calculate_performance_score_user(building.building_info["id"], aggregate)
+        df_score_user["building_name"] = building.building_info["name"]
+        score_list.append(df_score_user)
+
+    df_score_aggregate = pd.concat(score_list, axis=0).reset_index(drop=True)
+    df_score_aggregate = df_score_aggregate.pivot_table(index="building_name", columns="kpi", values="value")
+
+    return df_score_aggregate

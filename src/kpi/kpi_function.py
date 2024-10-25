@@ -142,7 +142,7 @@ def loss_of_load_probability(data: pd.DataFrame):
 
     data = data[data["Production"] > 0]
     data["f"] = data["Net"].apply(lambda x: 1 if x > 0 else 0)
-    return data["f"].sum() / data.shape[0] * 100
+    return 100 - data["f"].sum() / data.shape[0] * 100
 
 
 def energy_autonomy(data: pd.DataFrame):
@@ -167,12 +167,13 @@ def on_site_generation_ratio(data: pd.DataFrame):
 
 def load_volatility(data: pd.DataFrame):
     """
-    Calcola il KPI Load Volatility come la deviazione standard dei valori di carico.
+    Calcola il KPI Load Volatility come la deviazione standard dei valori di carico diviso la media (è un coefficiente
+    di variazione).
     :param data: dataframe con "Load" e datetime timestamp
     :return: il valore di Load Volatility
     """
 
-    return data["Load"].std()
+    return data["Load"].std() / data["Load"].mean() * 100
 
 
 def load_factor(data: pd.DataFrame):

@@ -1,4 +1,8 @@
 {
+  "percentage_anomalies": {
+    "name": "Percentuale di anomalie",
+    "uom": "Percentuale [%]"
+  },
   "off_impact": {
     "name": "Off Impact",
     "uom": "Percentuale [%]"
@@ -21,10 +25,10 @@
   },
   "load_volatility": {
     "name": "Volatilita del carico",
-    "uom": "Potenza [kW]"
+    "uom": "Percentuale [%]"
   },
   "self_sufficiency": {
-    "name": "Auto-sufficienza",
+    "name": "Autosufficienza",
     "uom": "Percentuale [%]"
   },
   "self_consumption": {
@@ -32,11 +36,11 @@
     "uom": "Percentuale [%]"
   },
   "self_sufficiency_potential": {
-    "name": "Potenziale di auto-sufficienza",
+    "name": "Potenziale di autosufficienza",
     "uom": "Percentuale [%]"
   },
   "additional_self_sufficiency": {
-    "name": "Auto-sufficienza aggiuntiva",
+    "name": "Autosufficienza aggiuntiva",
     "uom": "Percentuale [%]"
   },
   "loss_of_load_probability": {

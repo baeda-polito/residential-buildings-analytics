@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
+import seaborn as sns
 import pandas as pd
+import numpy as np
 import json
 
 
@@ -56,20 +58,80 @@ def plot_kpi_distribution(daily_kpi: pd.DataFrame):
     :param daily_kpi: il dataframe con i KPI giornalieri. Ha una colonna "date" e una colonna per ogni KPI
     :return: la figura con i plot
     """
-    pass
+    with open("config.json", "r") as f:
+        config = json.load(f)
+
+    kpi_columns = daily_kpi.columns.tolist()
+    kpi_columns.remove("date")
+
+    fig, axes = plt.subplots(1, len(kpi_columns), figsize=(4 * len(kpi_columns), 4))
+
+    for i, kpi in enumerate(kpi_columns):
+        ax = axes[i]
+        ax.grid(axis="y", alpha=0.4)
+        sns.histplot(daily_kpi[kpi], bins=20, color="skyblue", edgecolor="black", ax=ax, kde=True,
+                     kde_kws={"bw_adjust": 0.5})
+        ax.lines[0].set_color("red")
+        ax.set_title(f"{config[kpi]['name']}", fontsize=16)
+        ax.set_xlabel("Valore del KPI", fontsize=14)
+        ax.set_ylabel("Frequency", fontsize=14)
+
+        if config[kpi]["uom"] == "Percentuale [%]":
+            ax.set_xlim(0, 100)
+        elif config[kpi]["uom"] == "Valore normalizzato [-]":
+            ax.set_xlim(0, 1)
+
+    return fig
 
 
+def plot_radar_user(df_score: pd.DataFrame):
+    """
+    Radar plot per gli indicatori di performance di un utente
+    :param df_score: il dataframe con i KPI e i relativi punteggi
+    :return: la figura con il plot
+    """
+    with open("config.json", "r") as f:
+        config = json.load(f)
+
+    num_vars = len(df_score)
+
+    angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
+    angles += angles[:1]
+    values = df_score['value'].tolist()
+    values += values[:1]
+
+    fig, ax = plt.subplots(figsize=(10, 6), subplot_kw=dict(polar=True))
+
+    ax.plot(angles, values, color='skyblue', linewidth=2, linestyle='solid')
+    ax.fill(angles, values, color='skyblue', alpha=0.25)
+
+    ax.set_ylim(0, 100)
+    ax.set_yticks([20, 40, 60, 80, 100])
+    ax.set_yticklabels([20, 40, 60, 80, 100], color="grey", fontsize=8)
+
+    ax.set_xticks(angles[:-1])
+    ax.set_xticklabels(df_score['name'], fontsize=12)
+
+    for label, angle in zip(ax.get_xticklabels(), angles):
+        if 0 <= angle < np.pi / 2:  # Right side
+            label.set_horizontalalignment('left')
+        elif angle == np.pi / 2 or angle == 3 * np.pi / 2:
+            label.set_horizontalalignment('center')
+        elif np.pi / 2 < angle < 3 * np.pi / 2:
+            label.set_horizontalalignment('right')
+        else:  # Bottom-right side
+            label.set_horizontalalignment('left')
+    ax.set_rlabel_position(180 / num_vars)
+
+    return fig
 
 
 if __name__ == "__main__":
-    from src.kpi.calculate import calculate_kpi_load, calculate_kpi_flexibility, calculate_kpi_renewable
+    from src.kpi.calculate import calculate_performance_score_user
     user_id = "7436df46-294b-4c97-bd1b-8aaa3aed97c5"
-    user_name = "DU_1"
     aggregate = "anguillara"
-    kpi = calculate_kpi_renewable(user_id, aggregate)
-    fig = plot_daily_kpi(kpi["daily_kpi"])
-    plt.suptitle(f"Trend KPI giornalieri sulle rinnovabili per l'edificio {user_name}", fontsize=20,
-                 fontweight="bold")
-    plt.tight_layout(rect=(0, 0.03, 1, 0.99))
-    fig.subplots_adjust(right=1.1)
+
+    df_score = calculate_performance_score_user(user_id, aggregate)
+    fig = plot_radar_user(df_score)
     plt.show()
+
