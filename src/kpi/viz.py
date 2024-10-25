@@ -126,12 +126,65 @@ def plot_radar_user(df_score: pd.DataFrame):
     return fig
 
 
+def plot_boxplot_kpi_aggregate(df_kpi_aggregate: pd.DataFrame):
+    """
+    Boxplot dei KPI di ogni edificio all'interno dell'aggregato
+    :param df_kpi_aggregate: il dataframe con i KPI di ogni edificio
+    :return: la figura con il plot
+    """
+
+    with open("config.json", "r") as f:
+        config = json.load(f)
+
+    kpi_columns = df_kpi_aggregate.columns.tolist()
+    kpi_columns.remove("date")
+    kpi_columns.remove("building_name")
+
+    num_buildings = df_kpi_aggregate["building_name"].nunique()
+
+    if num_buildings > 5:
+        size_param_hor = 1
+        size_param_ver = len(kpi_columns)
+    else:
+        size_param_hor = 1.3
+        size_param_ver = len(kpi_columns) * 1.2
+
+    fig, axes = plt.subplots(len(kpi_columns), 1, figsize=(10 * size_param_hor, 3 * size_param_ver))
+
+    for i, kpi in enumerate(kpi_columns):
+
+        ax = axes[i]
+        sns.boxplot(data=df_kpi_aggregate, x="building_name", y=kpi, ax=ax, color="skyblue")
+        ax.set_title(f"{config[kpi]['name']}", fontsize=16)
+        ax.set_xlabel("Building", fontsize=14)
+        ax.set_ylabel(config[kpi]["uom"], fontsize=14)
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
+
+        if config[kpi]["uom"] == "Percentuale [%]":
+            ax.set_ylim(0, 100)
+        elif config[kpi]["uom"] == "Valore normalizzato [-]":
+            ax.set_ylim(0, 1)
+
+    return fig
+
+
 if __name__ == "__main__":
-    from src.kpi.calculate import calculate_performance_score_user
-    user_id = "7436df46-294b-4c97-bd1b-8aaa3aed97c5"
+    from src.kpi.calculate import calculate_kpi_aggregate
     aggregate = "anguillara"
 
-    df_score = calculate_performance_score_user(user_id, aggregate)
-    fig = plot_radar_user(df_score)
-    plt.show()
+    df_kpi_load, df_kpi_flexibility, df_kpi_renewable = calculate_kpi_aggregate(aggregate)
+    fig = plot_boxplot_kpi_aggregate(df_kpi_load)
+    plt.suptitle(f"Boxplot dei KPI sul carico per l'aggregato di {aggregate.title()}", fontsize=20, fontweight="bold")
+    plt.tight_layout(rect=(0, 0.03, 1, 0.99))
+    plt.savefig(f"../../figures/kpi/boxplot_load_{aggregate}.png")
+
+    fig = plot_boxplot_kpi_aggregate(df_kpi_flexibility)
+    plt.suptitle(f"Boxplot dei KPI sulla flessibilità per l'aggregato di {aggregate.title()}", fontsize=20, fontweight="bold")
+    plt.tight_layout(rect=(0, 0.03, 1, 0.99))
+    plt.savefig(f"../../figures/kpi/boxplot_flexibility_{aggregate}.png")
+
+    fig = plot_boxplot_kpi_aggregate(df_kpi_renewable)
+    plt.suptitle(f"Boxplot dei KPI sulle rinnovabili per l'aggregato di {aggregate.title()}", fontsize=20, fontweight="bold")
+    plt.tight_layout(rect=(0, 0.03, 1, 0.99))
+    plt.savefig(f"../../figures/kpi/boxplot_renewable_{aggregate}.png")
 

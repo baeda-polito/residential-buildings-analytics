@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import json
 from src.building import Building, load_anguillara, load_garda
 from src.utils.operating_hours import get_operating_hours
@@ -142,6 +143,41 @@ def calculate_kpi_flexibility(user_id: str, aggregate: str):
         },
         "daily_kpi": daily_kpi
     }
+
+
+def calculate_kpi_aggregate(aggregate: str):
+    """
+    Esegue il calcolo dei KPI per tutti gli edifici dell'aggregato.
+    :param aggregate: il nome dell'aggregato ("anguillara" o "garda")
+    :return: il dataframe con i KPI aggregati
+    """
+
+    building_list = []
+    if aggregate == "anguillara":
+        building_list = load_anguillara()
+    elif aggregate == "garda":
+        building_list = load_garda()
+
+    kpi_load_list = []
+    kpi_flexibility_list = []
+    kpi_renewable_list = []
+    for building in building_list:
+        kpi_load = calculate_kpi_load(building.building_info["id"], aggregate)["daily_kpi"]
+        kpi_load["building_name"] = building.building_info["name"]
+        kpi_load_list.append(kpi_load)
+        kpi_flexibility = calculate_kpi_flexibility(building.building_info["id"], aggregate)["daily_kpi"]
+        kpi_flexibility["building_name"] = building.building_info["name"]
+        kpi_flexibility_list.append(kpi_flexibility)
+        if building.building_info["user_type"] != "consumer":
+            kpi_renewable = calculate_kpi_renewable(building.building_info["id"], aggregate)["daily_kpi"]
+            kpi_renewable["building_name"] = building.building_info["name"]
+            kpi_renewable_list.append(kpi_renewable)
+
+    df_kpi_load_aggregate = pd.concat(kpi_load_list, axis=0).reset_index(drop=True)
+    df_kpi_flexibility_aggregate = pd.concat(kpi_flexibility_list, axis=0).reset_index(drop=True)
+    df_kpi_renewable_aggregate = pd.concat(kpi_renewable_list, axis=0).reset_index(drop=True)
+
+    return df_kpi_load_aggregate, df_kpi_flexibility_aggregate, df_kpi_renewable_aggregate
 
 
 def calculate_performance_score_user(user_id: str, aggregate: str):

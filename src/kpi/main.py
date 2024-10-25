@@ -1,7 +1,7 @@
-from src.kpi.viz import plot_daily_kpi, plot_kpi_distribution, plot_radar_user
+from src.kpi.viz import plot_daily_kpi, plot_kpi_distribution, plot_radar_user, plot_boxplot_kpi_aggregate
 from src.building import load_anguillara, load_garda
 from src.kpi.calculate import (calculate_kpi_load, calculate_kpi_flexibility, calculate_kpi_renewable,
-                               calculate_performance_score_user)
+                               calculate_performance_score_user, calculate_kpi_aggregate)
 import matplotlib.pyplot as plt
 
 
@@ -68,6 +68,23 @@ def run_kpi(aggregate: str):
                      fontweight="bold")
         plt.tight_layout(rect=(0, 0.03, 1, 0.99))
         plt.savefig(f"../../figures/kpi/radar_user_{building.building_info['name']}.png")
+
+    df_kpi_load_aggregate, df_kpi_flexibility_aggregate, df_kpi_renewable_aggregate = calculate_kpi_aggregate(aggregate)
+
+    fig_boxplot_kpi_load_aggregate = plot_boxplot_kpi_aggregate(df_kpi_load_aggregate)
+    plt.suptitle(f"Boxplot dei KPI sul carico per l'aggregato {aggregate}", fontsize=20, fontweight="bold")
+    plt.tight_layout(rect=(0, 0.03, 1, 0.99))
+    plt.savefig(f"../../figures/kpi/boxplot_load_{aggregate}.png")
+
+    fig_boxplot_kpi_flexibility_aggregate = plot_boxplot_kpi_aggregate(df_kpi_flexibility_aggregate)
+    plt.suptitle(f"Boxplot dei KPI sulla flessibilità per l'aggregato {aggregate}", fontsize=20, fontweight="bold")
+    plt.tight_layout(rect=(0, 0.03, 1, 0.99))
+    plt.savefig(f"../../figures/kpi/boxplot_flexibility_{aggregate}.png")
+
+    fig_boxplot_renewable_aggregate = plot_boxplot_kpi_aggregate(df_kpi_renewable_aggregate)
+    plt.suptitle(f"Boxplot dei KPI sulle rinnovabili per l'aggregato {aggregate}", fontsize=20, fontweight="bold")
+    plt.tight_layout(rect=(0, 0.03, 1, 0.99))
+    plt.savefig(f"../../figures/kpi/boxplot_renewable_{aggregate}.png")
 
 
 if __name__ == "__main__":
