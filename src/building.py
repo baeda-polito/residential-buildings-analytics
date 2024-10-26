@@ -1,5 +1,5 @@
 from src.api.smarthome import get_devices
-from src.pre_processing import pre_process_power, pre_process_production_power
+from src.pre_processing.pre_processing import pre_process_power, pre_process_production_power
 from settings import PROJECT_ROOT
 import os
 import json
