@@ -411,6 +411,7 @@ def plot_feature_distribution(aggregate: str):
                     how="inner")
 
     data_consumer = data[data["user_type"] == "consumer"]
+    data_consumer.sort_values("cluster", inplace=True)
     consumer_labels = data_consumer["cluster"].unique()
     consumer_labels.sort()
 
@@ -448,6 +449,7 @@ def plot_feature_distribution(aggregate: str):
                              f"violin_{aggregate}_consumer.png"))
 
     data_prosumer = data[data["user_type"] != "consumer"]
+    data_prosumer.sort_values("cluster", inplace=True)
     prosumer_labels = data_prosumer["cluster"].unique()
     prosumer_labels.sort()
 
@@ -478,7 +480,7 @@ def plot_feature_distribution(aggregate: str):
     handles = [Line2D([0], [0], color=palette[i], lw=4) for i in range(len(consumer_labels))]
     fig.legend(handles=handles, labels=prosumer_labels.tolist(), loc='lower center', bbox_to_anchor=(0.5, 0.01),
                ncol=len(prosumer_labels), fancybox=True, shadow=True)
-    plt.suptitle("Distribuzione degli indicatori di forma per i CONSUMER", fontsize=16, fontweight='bold')
+    plt.suptitle("Distribuzione degli indicatori di forma per i PROSUMER", fontsize=16, fontweight='bold')
     plt.tight_layout(rect=(0, 0.05, 1, 0.92))
     plt.savefig(os.path.join(PROJECT_ROOT, "figures", "clustering", "feature_distribution",
                              f"violin_{aggregate}_prosumer.png"))
@@ -516,7 +518,3 @@ def plot_cluster_population(aggregate: str):
     plt.title(f"Popolazione dei cluster per i PROSUMER in {aggregate.title()}", fontsize=16, fontweight='bold')
     plt.tight_layout()
     plt.savefig(os.path.join(PROJECT_ROOT, "figures", "clustering", f"cluster_population_{aggregate}_prosumer.png"))
-
-
-plot_cluster_population("anguillara")
-

@@ -1,4 +1,6 @@
-# Processi data-driven per l’individuazione automatica di anomalie energetiche e analisi di benchmarking in edifici residenziali
+![](figures/logo.png)  
+
+Processi data-driven per l’individuazione automatica di anomalie energetiche e analisi di benchmarking in edifici residenziali
 
 Questa repository contiene il codice sviluppato per il contratto di ricerca tra BAEDA Lab ed ENEA 2022-24. Gli obiettivi del contratto di ricerca sono:
 

@@ -11,7 +11,7 @@ def plot_heatmap_nan(aggregate: str, date_start: str, date_end: str):
     :param aggregate: il nome dell'aggregato ("anguillara" o "garda")
     :param date_start: data di inizio nel formato "YYYY-MM-DD"
     :param date_end: data di fine nel formato "YYYY-MM-DD"
-    :return: l'heat map
+    :return: l'heatmap
     """
 
     building_list = []
