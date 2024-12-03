@@ -9,8 +9,17 @@ from src.anomaly_detection.trainer import Trainer
 
 
 def train(uuid: str):
+    """
+    Funzione che addestra un modello di previsione della produzione fotovoltaica per un edificio. Il modello è un
+    MultiLayerPerceptron con 2 hidden layers da 64 neuroni ciascuno. Il modello viene addestrato per massimo 300 epoche
+    con early stopping se la loss validation non migliora di almeno 1e-6.
+    :param uuid: id dell'edificio
+    :return: None
+    """
+
     building = Building(uuid=uuid, aggregate="anguillara")
-    location = Location(latitude=building.building_info["coordinates"][1], longitude=building.building_info["coordinates"][0])
+    location = Location(latitude=building.building_info["coordinates"][1],
+                        longitude=building.building_info["coordinates"][0])
 
     energy_data = building.energy_meter.data
     weather_data = pd.read_csv("../../data/weather/anguillara.csv")
@@ -40,13 +49,3 @@ def train(uuid: str):
 
     df_loss = pd.DataFrame({"train": trainer.loss_list_train, "validation": trainer.loss_list_valid})
     df_loss.to_csv(f"../../data/pv_add/loss/{uuid}.csv", index=False)
-
-
-if __name__ == "__main__":
-    from src.building import load_anguillara
-
-    anguillara = load_anguillara()
-    for building in anguillara[2:3]:
-        if building.building_info["user_type"] != "consumer":
-            print(f"Training model for {building.building_info['id']} --- {building.building_info['name']}")
-            train(building.building_info["id"])

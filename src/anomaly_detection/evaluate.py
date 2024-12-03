@@ -12,6 +12,14 @@ import json
 
 
 def calc_metrics(y_true, y_pred):
+    """
+    Funzione che calcola le metriche di errore (MAE, RMSE, R2, MAPE, MSE) tra i valori veri e quelli predetti. Viene calcolato
+    solo per i valori diversi da 0 (quindi solo per i valori in cui c'è produzione fotovoltaica), per evitare di modificare
+    la vedia con errori nulli (poiché il modello predice automaticamente 0 se non vi è irradianza)
+    :param y_true: array con i valori di produzione reali
+    :param y_pred: array con i valori di produzione predetti
+    :return: dizionario con le metriche calcolate
+    """
 
     mask = y_true != 0
     y_true = y_true[mask]
@@ -33,6 +41,16 @@ def calc_metrics(y_true, y_pred):
 
 
 def evaluate_pv_model(uuid: str, aggregate: str = "anguillara"):
+    """
+    Valuta il modello allenato di previsione della produzione fotovoltaica di un edificio. Calcola le metriche di errore
+    (MAE, RMSE, R2, MAPE, MSE) tra i valori veri e quelli predetti, e salva i risultati in un file json. Inoltre, crea
+    dei grafici per visualizzare i risultati. In particolare, crea un grafico con le serie temporali dei valori predetti
+     vs reali, un grafico con la distribuzione degli errori e un grafico con la distribuzione dei valori predetti vs
+     reali. Salva i grafici in formato html.
+    :param uuid: l'id dell'edificio
+    :param aggregate: il nome dell'aggregato ("anguillara" o "garda")
+    :return: None
+    """
 
     mlp = MultiLayerPerceptron(input_size=5, hidden_layers=[64, 64], output_size=1)
     mlp.load_state_dict(torch.load(f"../../data/pv_add/models/{uuid}.pth"))
@@ -68,9 +86,9 @@ def evaluate_pv_model(uuid: str, aggregate: str = "anguillara"):
     with open(f"../../data/pv_add/metrics/train_{uuid}.json", "w") as f:
         json.dump(metrics_train, f)
 
-    metrics_train = calc_metrics(y_true_val_rescaled, y_pred_val_rescaled)
+    metrics_val = calc_metrics(y_true_val_rescaled, y_pred_val_rescaled)
     with open(f"../../data/pv_add/metrics/val_{uuid}.json", "w") as f:
-        json.dump(metrics_train, f)
+        json.dump(metrics_val, f)
 
     # Figure true vs pred
     data_plot = pd.DataFrame({"true": y_true_rescaled.flatten(), "pred": y_pred_rescaled.flatten()},

@@ -1,11 +1,19 @@
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
-from pvlib.location import Location
 from torch.utils.data import DataLoader, TensorDataset
 import torch
 
 
 class DataHandler:
+    """
+    Classe per gestire i dati relativi alla produzione e al meteo. I dati vengono integrati in un unico dataframe,
+    possono essere scalati tra 0 e 1 e e infine divisi in batch, creando dei dataloaders, per l'addestramento del modello.
+
+    :param energy_data: dataframe con i dati relativi alla produzione. Deve contenere una colonna "timestamp" con le date
+    e la produzione in una colonna "Production".
+    :param weather_data: dataframe con i dati relativi al meteo (ghi, dni, air_temp, azimuth, zenith). Deve contenere una
+    colonna "timestamp" con le date.
+    """
     def __init__(self, energy_data, weather_data):
         self.energy_data = energy_data
         self.weather_data = weather_data

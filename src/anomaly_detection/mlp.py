@@ -3,6 +3,14 @@ import torch.nn as nn
 
 
 class MultiLayerPerceptron(nn.Module):
+    """
+    Classe che definisce un modello di rete del tipo Multi Layer Perceptron.
+    Nel metodo forward, ovvero durante la predizione, si controlla se i primi due elementi del tensore in input, ovvero
+    Production e ghi, sono entrambi uguali a zero. In tal caso, si restituisce un tensore di zeri per quelle righe,
+    poiché non è possibile predire la produzione in assenza di radiazione solare (molto spesso può succedere di predire
+    un valore molto piccolo. In tal caso, si preferisce restituire un valore nullo). Se la condizione non è verificata,
+    si effettua il forward pass attraverso il modello.
+    """
     def __init__(self, input_size, hidden_layers, output_size):
         super(MultiLayerPerceptron, self).__init__()
 
