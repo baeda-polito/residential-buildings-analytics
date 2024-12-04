@@ -11,6 +11,34 @@ import torch
 import json
 
 
+def predict(model: MultiLayerPerceptron, X_tensor: torch.Tensor):
+    """
+    Funzione che effettua la predizione della produzione fotovoltaica per un insieme di dati X.
+    Nello step di previsione, controlla che i valori di irradianza non siano nulli, in tal caso predice un valore nullo.
+    Inoltre, controlla che i valori predetti non siano negativi, in tal caso li imposta a 0.
+    :param model: modello di regressione
+    :param X_tensor: tensor con i dati di input
+    :return: tensor con i valori predetti
+    """
+
+    model.eval()
+
+    mask_zero_irradiance = (X_tensor[:, 0] == 0) & (X_tensor[:, 1] == 0)
+
+    if mask_zero_irradiance.any():
+        # X_tensor = X_tensor[~mask_zero_irradiance]
+        output = torch.zeros(X_tensor.size(0), 1)
+        output[~mask_zero_irradiance] = model(X_tensor[~mask_zero_irradiance])  # Only forward pass for rows where the condition is False
+    else:
+        # If the condition is not met, forward pass through the model
+        output = model(X_tensor)
+
+        # Clip the output to ensure no negative values (clipping to zero)
+    output = torch.clamp(output, min=0)
+
+    return output
+
+
 def calc_metrics(y_true, y_pred):
     """
     Funzione che calcola le metriche di errore (MAE, RMSE, R2, MAPE, MSE) tra i valori veri e quelli predetti. Viene calcolato
@@ -62,16 +90,16 @@ def evaluate_pv_model(uuid: str, aggregate: str = "anguillara"):
     weather_data = pd.read_csv("../../data/weather/anguillara.csv")
     data_handler = DataHandler(energy_data=energy_data, weather_data=weather_data)
     data = data_handler.create_data(location=location)
-    X, y, x_scaler, y_scaler = data_handler.preprocess(data)
+    X, y, x_scaler, y_scaler = data_handler.preprocess(data, uuid, save_scalers=False)
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42, shuffle=True)
 
     X_tensor = torch.tensor(X, dtype=torch.float32)
     X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
     X_val_tensor = torch.tensor(X_val, dtype=torch.float32)
 
-    y_pred = mlp(X_tensor).detach().numpy()
-    y_pred_train = mlp(X_train_tensor).detach().numpy()
-    y_pred_val = mlp(X_val_tensor).detach().numpy()
+    y_pred = predict(mlp, X_tensor).detach().numpy()
+    y_pred_train = predict(mlp, X_train_tensor).detach().numpy()
+    y_pred_val = predict(mlp, X_val_tensor).detach().numpy()
 
     y_pred_rescaled = y_scaler.inverse_transform(y_pred)
     y_true_rescaled = y_scaler.inverse_transform(y)
@@ -106,12 +134,3 @@ def evaluate_pv_model(uuid: str, aggregate: str = "anguillara"):
 
     fig_true_vs_pred = plot_pred_vs_true(data_plot, building.building_info["name"])
     fig_true_vs_pred.write_html(f"../../figures/pv_evaluation/{uuid}_true_vs_pred.html")
-
-
-if __name__ == "__main__":
-    from src.building import load_anguillara
-
-    anguillara = load_anguillara()
-    for building in anguillara:
-        if building.building_info["user_type"] != "consumer":
-            evaluate_pv_model(building.building_info["id"])

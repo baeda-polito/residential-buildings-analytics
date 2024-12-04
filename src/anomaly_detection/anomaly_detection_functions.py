@@ -7,6 +7,15 @@ import torch
 
 
 def calculate_threshold(uuid: str, aggregate: str):
+    """
+    Funzione che calcola i threshold per la rilevazione delle anomalie per un edificio. I threshold vengono calcolati
+    come la media più 2 (low threshold) o 3 (high threshold) deviazioni standard dei residui del modello di previsione
+    della produzione fotovoltaica. I threshold vengono calcolati per ogni ora del giorno e salvati in un file csv
+    chiamato threhsold_{uuid}.csv.
+    :param uuid: l'id dell'edificio
+    :param aggregate: il nome dell'aggregato ("anguillara" o "garda")
+    :return: None
+    """
 
     mlp = MultiLayerPerceptron(input_size=5, hidden_layers=[64, 64], output_size=1)
     mlp.load_state_dict(torch.load(f"../../data/pv_add/models/{uuid}.pth"))
@@ -18,7 +27,7 @@ def calculate_threshold(uuid: str, aggregate: str):
     weather_data = pd.read_csv("../../data/weather/anguillara.csv")
     data_handler = DataHandler(energy_data=energy_data, weather_data=weather_data)
     data = data_handler.create_data(location=location)
-    X, y, x_scaler, y_scaler = data_handler.preprocess(data)
+    X, y, x_scaler, y_scaler = data_handler.preprocess(data, uuid, save_scalers=False)
 
     X_tensor = torch.tensor(X, dtype=torch.float32)
 
@@ -50,6 +59,14 @@ def calculate_threshold(uuid: str, aggregate: str):
 
 
 def get_anomaly_threhsold(y_pred, lt, ht):
+    """
+    Funzione che calcola i threshold per la rilevazione delle anomalie per un'osservazione. I threshold vengono calcolati
+    come la differenza tra il valore predetto e il low threshold (lt) o il high threshold (ht).
+    :param y_pred: il valore predetto
+    :param lt: il low threshold
+    :param ht: il high threshold
+    :return: lower_threshold, higher_threshold
+    """
 
     lower_threshold = y_pred - lt
     higher_threshold = y_pred - ht
@@ -58,6 +75,18 @@ def get_anomaly_threhsold(y_pred, lt, ht):
 
 
 def get_anomaly_severity(y_true, y_pred, lt, ht):
+    """
+    Funzione che calcola la severità dell'anomalia per una predizione. La severità è calcolata come segue:
+    - 1 se il valore osservato è maggiore di quello predetto più il high threshold
+    - 0.5 se il valore osservato è compreso tra il il valore predetto più il low threshold e il valore predetto più il
+    high threshold
+    - 0 nel resto dei casi
+    :param y_true: il valore osservato
+    :param y_pred: il valore predetto
+    :param lt: il low threshold
+    :param ht: il high threshold
+    :return: il valore di severità dell'anomalia
+    """
 
     if (y_pred - lt) > y_true > (y_pred - ht):
         return 0.5
@@ -65,16 +94,3 @@ def get_anomaly_severity(y_true, y_pred, lt, ht):
         return 1
     else:
         return 0
-
-
-if __name__ == "__main__":
-    from src.building import load_anguillara
-
-    building_list = load_anguillara()
-
-    for building in building_list:
-        if building.building_info["user_type"] != "consumer":
-            uuid = building.building_info["id"]
-            aggregate = building.building_info["aggregate"]
-            calculate_threshold(uuid, aggregate)
-
