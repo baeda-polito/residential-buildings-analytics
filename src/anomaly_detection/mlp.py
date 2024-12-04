@@ -33,18 +33,19 @@ class MultiLayerPerceptron(nn.Module):
 
     def forward(self, x):
         # Check if the first and second elements are zeros
-        zero_mask = (x[:, 0] == 0) & (x[:, 1] == 0)
-
-        if zero_mask.any():
-            # If both the first and second elements are zero, return a tensor of zeros for those rows
-            output = torch.zeros(x.size(0), 1)
-            output[~zero_mask] = self.model(x[~zero_mask])  # Only forward pass for rows where the condition is False
-        else:
-            # If the condition is not met, forward pass through the model
-            output = self.model(x)
-
-        # Clip the output to ensure no negative values (clipping to zero)
-        output = torch.clamp(output, min=0)
+        # zero_mask = (x[:, 0] == 0) & (x[:, 1] == 0)
+        #
+        # if zero_mask.any():
+        #     # If both the first and second elements are zero, return a tensor of zeros for those rows
+        #     output = torch.zeros(x.size(0), 1)
+        #     output[~zero_mask] = self.model(x[~zero_mask])  # Only forward pass for rows where the condition is False
+        # else:
+        #     # If the condition is not met, forward pass through the model
+        #     output = self.model(x)
+        #
+        # # Clip the output to ensure no negative values (clipping to zero)
+        # output = torch.clamp(output, min=0)
+        output = self.model(x)
 
         return output
 

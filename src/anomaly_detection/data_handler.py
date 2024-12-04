@@ -1,6 +1,7 @@
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from torch.utils.data import DataLoader, TensorDataset
+import pickle
 import torch
 
 
@@ -32,7 +33,7 @@ class DataHandler:
         return data
 
     @staticmethod
-    def preprocess(data):
+    def preprocess(data, uuid, save_scalers=True):
         X = data[["ghi", "dni", "air_temp", "azimuth", "zenith"]].to_numpy()
         y = data[["Production"]].to_numpy()
 
@@ -40,6 +41,13 @@ class DataHandler:
         y_scaler = MinMaxScaler()
         X_norm = x_scaler.fit_transform(X)
         y_norm = y_scaler.fit_transform(y)
+
+        if save_scalers:
+            with open(f"../../data/pv_add/scalers/x_scaler_{uuid}.pkl", "wb") as f:
+                pickle.dump(x_scaler, f)
+
+            with open(f"../../data/pv_add/scalers/y_scaler_{uuid}.pkl", "wb") as f:
+                pickle.dump(y_scaler, f)
 
         return X_norm, y_norm, x_scaler, y_scaler
 

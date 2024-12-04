@@ -27,7 +27,10 @@ def train(uuid: str):
     data_handler = DataHandler(energy_data=energy_data, weather_data=weather_data)
     data = data_handler.create_data(location=location)
 
-    X, y, x_scaler, y_scaler = data_handler.preprocess(data)
+    X, y, x_scaler, y_scaler = data_handler.preprocess(data, uuid)
+    zero_mask = (X[:, 0] == 0) & (X[:, 1] == 0)
+    X = X[~zero_mask]
+    y = y[~zero_mask]
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42, shuffle=True)
     train_loader = data_handler.create_dataloaders(X_train, y_train, batch_size=32)
     validation_loader = data_handler.create_dataloaders(X_val, y_val, batch_size=32)

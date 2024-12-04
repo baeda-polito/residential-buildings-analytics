@@ -1,5 +1,6 @@
 from src.anomaly_detection.train import train
 from src.anomaly_detection.evaluate import evaluate_pv_model
+from src.anomaly_detection.anomaly_detection_functions import calculate_threshold
 from src.building import load_anguillara, load_garda
 
 
@@ -39,4 +40,9 @@ def run_evaluation(aggregate: str):
         if building.building_info["user_type"] != "consumer":
             print(f"Evaluating model for {building.building_info['id']} --- {building.building_info['name']}")
             evaluate_pv_model(building.building_info["id"], aggregate)
+            calculate_threshold(building.building_info["id"], aggregate)
 
+
+if __name__ == "__main__":
+    run_train("anguillara")
+    run_evaluation("anguillara")
