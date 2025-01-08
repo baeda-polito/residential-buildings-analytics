@@ -51,7 +51,7 @@ rated_power_pv = 5  # Potenza nominale dell'impianto fotovoltaico
 user_type = 'producer'  # Tipologia di utente
 
 # Pre-processing della potenza consumata dall'edificio
-power_data = pre_process_power(power_data, user_type, rated_power, rated_power_pv, max_missing_interp=4, max_missing_knn=24)
+power_data_cleaned = pre_process_power(power_data, user_type, rated_power, rated_power_pv, max_missing_interp=4, max_missing_knn=24)
 
 physic_model = True
 pv_params = {
@@ -60,9 +60,8 @@ pv_params = {
     "rated_power": rated_power_pv,
     "storage": 5
 }
-
 coordinates = [12.28, 41.8]
 
 # Pre-processing della potenza prodotta dall'impianto fotovoltaico
-production_power_data = pre_process_production_power(production_power_data, weather_data, physic_model, pv_params, coordinates)
+production_power_data_cleaned = pre_process_production_power(production_power_data, weather_data, physic_model, pv_params, coordinates)
 ```

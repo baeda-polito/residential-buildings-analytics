@@ -28,7 +28,7 @@ def pre_process_power(data: pd.DataFrame, user_type: str, rated_power, rated_pv_
     Returns:
         pd.DataFrame con i dati di potenza pre-processati
     """
-    logger.info("Pre-processing del carico elettrico")
+    logger.debug("Pre-processing del carico elettrico")
     data_pre_processed = data[["timestamp", "power"]].copy()
 
     if user_type == "consumer":
@@ -123,7 +123,7 @@ def pre_process_production_power(data: pd.DataFrame, weather_data: pd.DataFrame,
     data_model = data_model.drop(index_reconstruct)
 
     if physic_model:
-        logger.info("Pre-processing della produzione con modello con modello fisico")
+        logger.debug("Pre-processing della produzione con modello con modello fisico")
         pv_production = get_pv_production(
             lat=coordinates[0],
             lon=coordinates[1],
@@ -140,7 +140,7 @@ def pre_process_production_power(data: pd.DataFrame, weather_data: pd.DataFrame,
         data_pre_processed = data_pre_processed.reset_index()
         data_pre_processed = data_pre_processed[["timestamp", "productionPower"]]
     else:
-        logger.info("Pre-processing della produzione con modello data-driven model")
+        logger.debug("Pre-processing della produzione con modello data-driven model")
         # Use data-driven model
         if len(data_to_reconstruct) < 0.7 * len(data_model):
             data_linear_model = data_model.dropna(subset=["productionPower"])

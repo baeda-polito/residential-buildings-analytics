@@ -19,12 +19,12 @@ class Building:
             weather_data (pd.DataFrame): dati meteorologici. Necessari solo se l'utente è un prosumer/prostormer
             metadata (dict): metadati dell'edificio. I valori che devono essere presenti sono:
                 - "id": identificativo dell'edificio
+                - "name": nome dell'edificio
                 - "user_type": tipologia di utente
                 - "rated_power": potenza nominale
                 Valori opzionali:
                 - "pv": dizionario con i seguenti valori: "tilt", "azimuth", "rated_power", "storage"
                 - "coordinates": lista delle coordinate geografiche dell'edificio
-                - "name": nome dell'edificio
                 - "persons": numero di persone nell'edificio
                 - "occupancy": dizionario con i seguenti valori: "24-8", "8-13", "13-19", "19-24"
                 - "tariff": stringa con il tipo di tariffa
@@ -53,7 +53,7 @@ class Building:
         """
         Pre-processa i dati del contatore di energia.
         """
-
+        logger.info(f"Pre-processing dei dati per l'edificio {self.building_info['name']}")
         self.energy_data.pre_process(metadata=self.building_info)
         self.energy_data.define_load_components(user_type=self.building_info["user_type"])
 
@@ -107,7 +107,7 @@ class EnergyData:
                 physic_model = True
             else:
                 physic_model = False
-            weather = self.weather_data
+            weather = self.weather_data.copy()
             weather["timestamp"] = pd.to_datetime(weather["timestamp"])
             production_power = pre_process_production_power(
                 data=data_cleaned,
@@ -130,7 +130,7 @@ class EnergyData:
             user_type (str): tipologia di utente
         """
 
-        logger.info(f"Definizione delle componenti del carico.")
+        logger.debug(f"Definizione delle componenti del carico.")
         data = self.data_cleaned.copy()
 
         if user_type != "consumer":
