@@ -1,6 +1,7 @@
 from .building import Building
 from .aggregate import Aggregate
 from .kpi import run_kpi
+from .benchmarking import run_benchmarking
 from settings import PROJECT_ROOT
 
 import warnings
@@ -29,6 +30,9 @@ if not os.path.exists(os.path.join(PROJECT_ROOT, "figures", "kpi")):
 
 if not os.path.exists(os.path.join(PROJECT_ROOT, "figures", "benchmarking")):
     os.makedirs(os.path.join(PROJECT_ROOT, "figures", "benchmarking"))
+
+if not os.path.exists(os.path.join(PROJECT_ROOT, "figures", "benchmarking", "feature_distribution")):
+    os.makedirs(os.path.join(PROJECT_ROOT, "figures", "benchmarking", "feature_distribution"))
 
 if not os.path.exists(os.path.join(PROJECT_ROOT, "figures", "anomaly_detection")):
     os.makedirs(os.path.join(PROJECT_ROOT, "figures", "anomaly_detection"))

@@ -21,7 +21,7 @@ def run_kpi(aggregate: Aggregate, cluster: pd.DataFrame):
         None
     """
 
-    logger.info(f"Running KPI pipeline for aggregate {aggregate.name}")
+    logger.info(f"Iniziando la pipeline del calcolo dei KPI per l'aggregato {aggregate.name}")
 
     for building in aggregate.buildings:
         kpi_daily_load = calculate_kpi_load(building, cluster)

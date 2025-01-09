@@ -46,3 +46,72 @@ metadata = {}  # Metadati relativi all'edificio
 DU2 = Building(data=data, weather_data=weather, metadata=metadata)
 DU2.pre_process()
 ```
+
+### Individuazione automatica di anomalie energetiche
+
+### Analisi di benchmarking esterno
+```python
+import pandas as pd
+import json
+import os
+
+from settings import PROJECT_ROOT
+from src.energy_analytics import Building, Aggregate, run_benchmarking
+
+
+data_DU1 = pd.DataFrame()
+metadata_DU1 = {}
+
+data_DU2 = pd.DataFrame()
+metadata_DU2 = {}
+
+data_DU5 = pd.DataFrame()
+metadata_DU5 = {}
+
+weather = pd.DataFrame()
+
+DU1 = Building(data=data_DU1, weather_data=weather, metadata=metadata_DU1)
+DU2 = Building(data=data_DU2, weather_data=weather, metadata=metadata_DU2)
+DU5 = Building(data=data_DU5, weather_data=weather, metadata=metadata_DU5)
+
+aggregate = Aggregate(name="anguillara", buildings=[DU1, DU2, DU5])
+
+for building in aggregate.buildings:
+    building.pre_process()
+
+run_benchmarking(aggregate)
+
+
+```
+### Calcolo dei KPI
+
+```python
+import pandas as pd
+import os
+
+from settings import PROJECT_ROOT
+from src.energy_analytics import Building, Aggregate, run_kpi
+
+
+data_DU1 = pd.DataFrame()
+metadata_DU1 = {}
+
+data_DU2 = pd.DataFrame()
+metadata_DU2 = {}
+
+weather = pd.DataFrame()
+
+DU1 = Building(data=data_DU1, weather_data=weather, metadata=metadata_DU1)
+DU2 = Building(data=data_DU2, weather_data=weather, metadata=metadata_DU2)
+
+aggregate = Aggregate(name="anguillara", buildings=[DU1, DU2])
+
+for building in aggregate.buildings:
+    building.pre_process()
+
+cluster = pd.read_csv(os.path.join(PROJECT_ROOT, "results", "benchmarking", "cluster_anguillara.csv"))
+
+run_kpi(aggregate, cluster)
+```
+
+---

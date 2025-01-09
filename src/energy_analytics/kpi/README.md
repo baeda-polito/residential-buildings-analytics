@@ -55,7 +55,7 @@ aggregate = Aggregate(name="anguillara", buildings=[DU1, DU2])
 for building in aggregate.buildings:
     building.pre_process()
 
-cluster = pd.read_csv(os.path.join(PROJECT_ROOT, "results", "benchmarking", "cluster_anguillara.csv"))
+cluster = pd.read_csv(os.path.join(PROJECT_ROOT, "results", "benchmarking", "cluster_anguillara_assigned.csv"))
 
 run_kpi(aggregate, cluster)
 ```
