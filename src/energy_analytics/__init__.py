@@ -25,6 +25,9 @@ if not os.path.exists(os.path.join(PROJECT_ROOT, "results", "anomaly_detection")
 if not os.path.exists(os.path.join(PROJECT_ROOT, "figures")):
     os.makedirs(os.path.join(PROJECT_ROOT, "figures"))
 
+if not os.path.exists(os.path.join(PROJECT_ROOT, "figures", "pre_processing")):
+    os.makedirs(os.path.join(PROJECT_ROOT, "figures", "pre_processing"))
+
 if not os.path.exists(os.path.join(PROJECT_ROOT, "figures", "kpi")):
     os.makedirs(os.path.join(PROJECT_ROOT, "figures", "kpi"))
 

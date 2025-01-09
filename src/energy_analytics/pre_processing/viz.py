@@ -1,32 +1,32 @@
-from src.building import load_anguillara, load_garda
+import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap, Normalize
 
+from settings import PROJECT_ROOT
+from ..aggregate import Aggregate
 
-def plot_heatmap_nan(aggregate: str, date_start: str, date_end: str):
+
+def plot_heatmap_nan(aggregate: Aggregate, date_start: str, date_end: str) -> None:
     """
-    Grafica un heatmap con i valori mancanti per ogni edificio per ogni giorno.
-    :param aggregate: il nome dell'aggregato ("anguillara" o "garda")
-    :param date_start: data di inizio nel formato "YYYY-MM-DD"
-    :param date_end: data di fine nel formato "YYYY-MM-DD"
-    :return: l'heatmap
+    Grafica un heatmap con i valori mancanti per ogni edificio per ogni giorno, sia per la potenza che per la produzione.
+
+    Args:
+        aggregate (Aggregate): Oggetto Aggregate con la lista di edifici (List[Building]).
+        date_start (str): Data di inizio nel formato "YYYY-MM-DD".
+        date_end (str): Data di fine nel formato "YYYY-MM-DD".
+
+    Returns:
+        None
     """
-
-    building_list = []
-    if aggregate == "anguillara":
-        building_list = load_anguillara()
-    elif aggregate == "garda":
-        building_list = load_garda()
-
 
     datetime_range = pd.date_range(start=date_start, end=date_end, freq="15min", tz="UTC")
 
     list_missing_values_power = []
     list_missing_values_production = []
-    for building in building_list:
-        data = building.energy_meter.energy_meter_data.copy()
+    for building in aggregate.buildings:
+        data = building.energy_data.data_raw.copy()
         data.set_index("timestamp", inplace=True)
         data.index = pd.to_datetime(data.index, utc=True)
         data = data.reindex(datetime_range)
@@ -42,7 +42,6 @@ def plot_heatmap_nan(aggregate: str, date_start: str, date_end: str):
             missing_values_production = missing_values_production.groupby(missing_values_production.index.date).sum()
             missing_values_production.name = building.building_info["name"]
             list_missing_values_production.append(missing_values_production)
-
 
     df_missing_values_power = pd.concat(list_missing_values_power, axis=1)
     df_missing_values_production = pd.concat(list_missing_values_production, axis=1)
@@ -75,11 +74,10 @@ def plot_heatmap_nan(aggregate: str, date_start: str, date_end: str):
     cbar.ax.tick_params(labelsize=12)
     cbar.set_ticks([0, 16, 32, 48, 64, 80, 96])
 
-    plt.title(f"Numero di valori di potenza mancanti giornalieri per edificio per {aggregate.title()}", fontsize=20, fontweight="bold")
+    plt.title(f"Numero di valori di potenza mancanti giornalieri per edificio per {aggregate.name.title()}", fontsize=20, fontweight="bold")
 
     plt.tight_layout()
-    plt.savefig(f"../../figures/power_pre_processing/missing_values_power_{aggregate}.png", dpi=300)
-
+    plt.savefig(os.path.join(PROJECT_ROOT, "figures", "pre_processing", f"missing_values_power_{aggregate.name}.png"), dpi=300)
 
     fig, ax = plt.subplots(figsize=(16, 8))
     im = ax.imshow(df_missing_values_production.T, aspect="auto", cmap=cmap, norm=norm)
@@ -104,8 +102,8 @@ def plot_heatmap_nan(aggregate: str, date_start: str, date_end: str):
     cbar.ax.tick_params(labelsize=12)
     cbar.set_ticks([0, 16, 32, 48, 64, 80, 96])
 
-    plt.title(f"Numero di valori di potenza mancanti giornalieri per edificio per {aggregate.title()}", fontsize=20,
+    plt.title(f"Numero di valori di potenza mancanti giornalieri per edificio per {aggregate.name.title()}", fontsize=20,
               fontweight="bold")
 
     plt.tight_layout()
-    plt.savefig(f"../../figures/pv_pre_processing/missing_values_production_{aggregate}.png", dpi=300)
+    plt.savefig(os.path.join(PROJECT_ROOT, "figures", "pre_processing", f"missing_values_production_{aggregate.name}.png"), dpi=300)
