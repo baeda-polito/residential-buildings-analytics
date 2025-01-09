@@ -14,6 +14,54 @@ Il modulo è organizzato nel seguente modo:
 
 ## Utilizzo
 
+Il processo di benchmarking può essere eseguito sia in modalità online che offline.
+
+### Modalità offline
+
+In modalità offline, il processo di benchmarking porta alla definizione dei cluster dei profili di carico e dei suoi medioidi. 
+Una volta trovati i cluster, vengono estratte le statistiche sulla cardinalità dei cluster e caratterizzati i singoli edifici in base al cluster di appartenenza.
+In questo caso, tutto il processo deve essere eseguito.
+
 ```python
-# TODO
+import pandas as pd
+
+from src.energy_analytics import Building, Aggregate, run_benchmarking
+
+data_DU1 = pd.DataFrame()
+metadata_DU1 = {}
+
+data_DU2 = pd.DataFrame()
+metadata_DU2 = {}
+
+data_DU5 = pd.DataFrame()
+metadata_DU5 = {}
+
+weather = pd.DataFrame()
+
+DU1 = Building(data=data_DU1, weather_data=weather, metadata=metadata_DU1)
+DU2 = Building(data=data_DU2, weather_data=weather, metadata=metadata_DU2)
+DU5 = Building(data=data_DU5, weather_data=weather, metadata=metadata_DU5)
+
+aggregate = Aggregate(name="anguillara", buildings=[DU1, DU2, DU5])
+
+for building in aggregate.buildings:
+    building.pre_process()
+
+run_benchmarking(aggregate)
+```
+
+### Modalità online
+
+In modalità online, il processo di benchmarking consiste nell'assegnazione dei profili di carico di un utente all'interno del cluster con il medioide più vicino al profilo di carico analizzato.
+
+```python
+import pandas as pd
+
+from src.energy_analytics.benchmarking import assign_to_nearest_or_anomalous
+
+
+load_profile = pd.Series()  # 96 valori del carico elettrico
+medioids = pd.DataFrame()  # Medioidi dei cluster. DataFrame nx96 (n cluster), con indice il numero del cluster.
+
+cluster = assign_to_nearest_or_anomalous(load_profile, medioids, threshold=3)
 ```

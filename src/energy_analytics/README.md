@@ -52,12 +52,8 @@ DU2.pre_process()
 ### Analisi di benchmarking esterno
 ```python
 import pandas as pd
-import json
-import os
 
-from settings import PROJECT_ROOT
 from src.energy_analytics import Building, Aggregate, run_benchmarking
-
 
 data_DU1 = pd.DataFrame()
 metadata_DU1 = {}
@@ -80,8 +76,6 @@ for building in aggregate.buildings:
     building.pre_process()
 
 run_benchmarking(aggregate)
-
-
 ```
 ### Calcolo dei KPI
 
