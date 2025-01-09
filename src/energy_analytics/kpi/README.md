@@ -31,6 +31,10 @@ Il modulo è organizzato nel seguente modo:
 
 ## Utilizzo
 
+### Calcolo dei KPI per l'intero aggregato per un determinato periodo di tempo
+
+Se si vuole calcolare gli indicatori per tutti gli edifici di un intero aggregato, per esempio per funzioni di reportistica, è possibile eseguire direttamente tutta la pipeline.
+
 ```python
 import pandas as pd
 import os
@@ -58,4 +62,40 @@ for building in aggregate.buildings:
 cluster = pd.read_csv(os.path.join(PROJECT_ROOT, "results", "benchmarking", "cluster_anguillara_assigned.csv"))
 
 run_kpi(aggregate, cluster)
+```
+
+### Calcolo di alcuni KPI per un singolo edificio
+
+Se si vuole calcolare gli indicatori per un singolo edificio, è possibile utilizzare le funzioni di calcolo direttamente.
+
+```python
+import pandas as pd
+
+from src.energy_analytics.kpi.kpis import eui
+
+data = pd.DataFrame()  # Dataframe con le colonne Load e timestamp
+surface = 100  # Superficie dell'edificio in m^2
+
+EUI = eui(data, surface)
+```
+
+È anche possibile calcolare un'intera categoria di KPIs.
+
+```python
+import pandas as pd
+import os
+
+from settings import PROJECT_ROOT
+from src.energy_analytics import Building
+from src.energy_analytics.kpi.calculate import calculate_kpi_load
+
+data = pd.DataFrame()
+weather = pd.DataFrame()
+metadata = {}
+
+building = Building(data=data, weather_data=weather, metadata=metadata)
+
+cluster = pd.read_csv(os.path.join(PROJECT_ROOT, "results", "benchmarking", "cluster_anguillara_assigned.csv"))
+
+kpis_load = calculate_kpi_load(building, cluster)
 ```
