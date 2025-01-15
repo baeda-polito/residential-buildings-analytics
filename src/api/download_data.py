@@ -1,24 +1,29 @@
 import os
 import pandas as pd
 import numpy as np
-from src.building import load_anguillara, load_garda
-from src.api.smarthome import get_data_device, get_devices
-from settings import PROJECT_ROOT
-import logging
+from loguru import logger
 
-# Configure logging (you can customize the log format, level, etc.)
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+from settings import PROJECT_ROOT
+from src.energy_analytics import Aggregate
+from .smarthome import get_data_device, get_devices
 
 
 def save_energy_data(building_id: str, time_from: str, time_to: str):
     """
-    Funzione che salva i dati relativi al dispositivo utente di un determinato edificio
-    :param building_id: id edificio
-    :param time_from: stringa con la data di inizio nel formato "YYYY-MM-DDTHH:MM:SS"
-    :param time_to: stringa con la data di fine nel formato "YYYY-MM-DDTHH:MM:SS"
-    :return:
+    Funzione che salva i dati relativi al dispositivo utente di un determinato edificio.
+
+    Args:
+        building_id (str): id edificio
+        time_from (str): stringa con la data di inizio nel formato "YYYY-MM-DDTHH:MM:SS"
+        time_to (str): stringa con la data di fine nel formato "YYYY-MM-DDTHH:MM:SS"
+
+    Returns:
+        None
     """
-    logging.info(f"\033[97mStarting data save process for building {building_id}, from {time_from} to {time_to}")
+
+    # TODO: Refactor this function
+
+    logger.info(f"Starting data save process for building {building_id}, from {time_from} to {time_to}")
 
     time_from_dt = pd.to_datetime(time_from)
     time_to_dt = pd.to_datetime(time_to)
@@ -63,38 +68,44 @@ def save_energy_data(building_id: str, time_from: str, time_to: str):
         # Save CSV
         csv_path = os.path.join(PROJECT_ROOT, "data", "energy_meter", f"{building_id}.csv")
         df.to_csv(csv_path, index=False)
-        logging.info(f"\033[92m\u2714 CSV file saved for building {building_id} at {csv_path}")
-
+        logger.debug(f"CSV file saved for building {building_id} at {csv_path}")
     else:
         warning_msg = f"No user device found for building {building_id}"
-        logging.warning(f"\u2716 {warning_msg}")
+        logger.warning(f"{warning_msg}")
         raise Warning(warning_msg)
 
 
-def save_energy_data_aggregate(aggregate: str, time_from: str, time_to: str):
+def save_energy_data_aggregate(aggregate: Aggregate, time_from: str, time_to: str):
     """
     Funzione che salva i dati relativi al dispositivo utente di un determinato edificio
-    :param aggregate: stringa con il nome dell'aggregato
-    :param time_from: stringa con la data di inizio nel formato "YYYY-MM-DDTHH:MM:SS"
-    :param time_to: stringa con la data di fine nel formato "YYYY-MM-DDTHH:MM:SS"
-    :return:
+
+    Args:
+        aggregate (Aggregate): oggetto Aggregate con le informazioni sull'aggregato
+        time_from (str): stringa con la data di inizio nel formato "YYYY-MM-DDTHH:MM:SS"
+        time_to (str): stringa con la data di fine nel formato "YYYY-MM-DDTHH:MM:SS"
+
+    Returns:
+        None
     """
 
-    building_list = []
-    if aggregate == "anguillara":
-        building_list = load_anguillara()
-    elif aggregate == "garda":
-        building_list = load_garda()
-
-    for building in building_list:
+    for building in aggregate.buildings:
         save_energy_data(building.building_info["id"], time_from, time_to)
 
 
-def save_weather_data(prefix="anguillara"):
+def save_weather_data(aggregate: Aggregate):
+    """
+    Funzione che raccoglie i dati meteo relativi ad un aggregato e li salva in un unico file CSV.
+
+    Args:
+        aggregate (Aggregate): oggetto Aggregate con le informazioni sull'aggregato
+
+    Returns:
+        None
+    """
 
     files = os.listdir(os.path.join(PROJECT_ROOT, "data", "weather"))
-    files = [f for f in files if f.startswith(prefix)]
-    files = [f for f in files if f != f"{prefix}.csv"]
+    files = [f for f in files if f.startswith(aggregate.name)]
+    files = [f for f in files if f != f"{aggregate.name}.csv"]
 
     weather_data = pd.concat([pd.read_csv(os.path.join(PROJECT_ROOT, "data", "weather", f)) for f in files])
     weather_data.drop(columns=["period"], inplace=True)
@@ -105,9 +116,4 @@ def save_weather_data(prefix="anguillara"):
     cols = weather_data.columns.tolist()
     cols = cols[-1:] + cols[:-1]
     weather_data = weather_data[cols]
-    weather_data.to_csv(os.path.join(PROJECT_ROOT, "data", "weather", f"{prefix}.csv"), index=False)
-
-
-if __name__ == "__main__":
-    #save_energy_data_aggregate("anguillara", "2024-01-01T00:00:00", "2024-10-15T23:59:59")
-    save_energy_data_aggregate("garda", "2024-01-01T00:00:00", "2024-10-15T23:59:59")
+    weather_data.to_csv(os.path.join(PROJECT_ROOT, "data", "weather", f"{aggregate.name}.csv"), index=False)

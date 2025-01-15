@@ -1,28 +1,29 @@
-"""
-
-"""
-
 import requests
 import json
 import urllib
 import urllib3
-from settings import bearer_token
+import os
+from dotenv import load_dotenv
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+load_dotenv("../../.env")
+BEARER_TOKEN = os.getenv("BEARER_TOKEN")
 
 
-def get_plant_info(plant_id: str):
+def get_plant_info(plant_id: str) -> dict:
     """
-    Funzione che restituisce le informazioni di un determinato edificio
-    :param plant_id: uuid dell'edificio
-    :return:
+    Funzione che restituisce le informazioni di un determinato edificio.
+    Args:
+        plant_id (str): uuid dell'edificio
+    Returns:
+        dict: dizionario con le informazioni dell'edificio
     """
 
     url = f"https://www.smarthome.enea.it/api/projects/43c4bb12-5a38-4ed8-b704-5be64310012a/dashboard/components/plants/{plant_id}"
 
     payload = {}
     headers = {
-        'Authorization': f"Bearer {bearer_token}"
+        'Authorization': f"Bearer {BEARER_TOKEN}"
     }
 
     response = requests.request("GET", url, headers=headers, data=payload, verify=False)
@@ -31,11 +32,13 @@ def get_plant_info(plant_id: str):
     return plant_info
 
 
-def get_devices(plant_id: str):
+def get_devices(plant_id: str) -> dict:
     """
     Funzione che restituisce tutti i dispositivi per un determinato edificio
-    :param plant_id: uuid dell'edificio
-    :return:
+    Args:
+        plant_id (str): uuid dell'edificio
+    Returns:
+        dict: dizionario con i dispositivi dell'edificio
     """
 
     url = "https://www.smarthome.enea.it/api/projects/43c4bb12-5a38-4ed8-b704-5be64310012a/devices"
@@ -47,7 +50,7 @@ def get_devices(plant_id: str):
         "authority": "www.smarthome.enea.it",
         "accept": "application/json, text/plain, */*",
         "accept-language": "it,it-IT;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
-        "authorization": f"Bearer {bearer_token}",
+        "authorization": f"Bearer {BEARER_TOKEN}",
         "referer": "https://www.smarthome.enea.it/app/management/plants",
         "sec-ch-ua": "^\^Chromium^^;v=^\^112^^, ^\^Microsoft",
         "sec-ch-ua-mobile": "?0",
@@ -65,14 +68,16 @@ def get_devices(plant_id: str):
     return devices
 
 
-def get_data_device(device_id: str, properties: list, time_to: str, time_from: str):
+def get_data_device(device_id: str, properties: list, time_to: str, time_from: str) -> dict:
     """
     Funzione che restituisce un dizionario con i dati delle grandezze definite in properties, per il sensore in input
-    :param device_id: id del sensore
-    :param properties: la lista di proprietà
-    :param time_to:
-    :param time_from:
-    :return:
+    Args:
+        device_id (str): uuid del sensore
+        properties (str): lista delle grandezze da estrarre
+        time_to (str): data di fine
+        time_from (str): data di inizio
+    Returns:
+        dict: dizionario con i dati del sensore
     """
 
     url = "https://www.smarthome.enea.it/api/projects/43c4bb12-5a38-4ed8-b704-5be64310012a/telemetry"
@@ -89,7 +94,7 @@ def get_data_device(device_id: str, properties: list, time_to: str, time_from: s
         'authority': 'www.smarthome.enea.it',
         'accept': 'application/json, text/plain, */*',
         'accept-language': 'it,it-IT;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
-        'authorization': f'Bearer {bearer_token}',
+        'authorization': f'Bearer {BEARER_TOKEN}',
         'cookie': '_ga_9WXGGLFQEH=GS1.1.1684230821.1.1.1684230872.0.0.0; _ga=GA1.1.861981974.1684230821',
         'referer': 'https://www.smarthome.enea.it/app/management/plants',
         'sec-ch-ua': '"Microsoft Edge";v="113", "Chromium";v="113", "Not-A.Brand";v="24"',

@@ -6,14 +6,18 @@ import pandas as pd
 from settings import PROJECT_ROOT
 
 
-def get_historical_data_wunderground(location_code: str, start_date: str, end_date: str):
+def get_historical_data_wunderground(location_code: str, start_date: str, end_date: str) -> list:  # deprecated
     """
+    DEPRECATED
     Estrae i dati storici meteo dal sito www.wunderground.com per massimo un mese, con una granularità di mezz'ora.
-    :param location_code: codice della stazione meteo più vicina (Rome: LIRA:9:IT, Pinerolo LIMF:9:IT, Viterbo LIRF:9:IT)
-    :param start_date: stringa della data di inizio nel formato %Y%m%d
-    :param end_date: stringa della data di fine nel formato %Y%m%d
-    :return: lista di dizionari che contengono timestamp, temperatura, punto di rugiada, umidità, pressione e velocità
-     del vento
+
+    Args:
+        location_code (str): codice della stazione meteo più vicina (Rome: LIRA:9:IT, Pinerolo LIMF:9:IT, Viterbo LIRF:9:IT)
+        start_date (str): stringa della data di inizio nel formato %Y%m%d
+        end_date (str): stringa della data di fine nel formato %Y%m%d
+
+    Returns:
+        list: lista di dizionari che contengono timestamp, temperatura, punto di rugiada, umidità, pressione e velocità
     """
 
     url = f"https://api.weather.com/v1/location/{location_code}/observations/historical.json"
@@ -43,6 +47,17 @@ def get_historical_data_wunderground(location_code: str, start_date: str, end_da
 
 
 def get_historical_data_solcast(start_date: str, lat=42.0837, lon=12.283):
+    """
+    Estrae i dati storici meteo dal sito www.solcast.com
+
+    Args:
+        start_date (str): stringa della data di inizio nel formato %Y-%m-%dT%H:%M:%SZ
+        lat (float): latitudine
+        lon (float): longitudine
+
+    Returns:
+        pandas.DataFrame: dataframe con i dati storici meteo
+    """
 
     url = f"https://api.solcast.com.au/data/historic/radiation_and_weather?latitude={lat}&longitude={lon}&start={start_date}&duration=P31D&format=csv&time_zone=longitudinal&period=PT15M"
 
@@ -66,5 +81,5 @@ if __name__ == "__main__":
     lat_anguillara = 42.0837
     lon_anguillara = 12.283
 
-    df = get_historical_data_solcast("2024-08-01T00:00:00Z", lat=45.2756, lon=10.2829)
-    df.to_csv(os.path.join(PROJECT_ROOT, "data", "weather", "garda_2024-08.csv"), index=False)
+    df = get_historical_data_solcast("2024-01-02T00:00:00Z", lat=lat_anguillara, lon=lon_anguillara)
+    df.to_csv(os.path.join(PROJECT_ROOT, "data", "weather", "anguillara_2024-02.csv"), index=False)
