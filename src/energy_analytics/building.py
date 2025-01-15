@@ -11,7 +11,7 @@ class Building:
     i metadati riguardo all'edificio stesso.
     """
 
-    def __init__(self, data:pd.DataFrame, weather_data: pd.DataFrame, metadata: dict):
+    def __init__(self, data: pd.DataFrame, weather_data: pd.DataFrame, metadata: dict):
         """
         Inizializza la classe Building.
         Args:

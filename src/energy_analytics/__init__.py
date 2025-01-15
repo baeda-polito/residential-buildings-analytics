@@ -22,6 +22,21 @@ if not os.path.exists(os.path.join(PROJECT_ROOT, "results", "benchmarking")):
 if not os.path.exists(os.path.join(PROJECT_ROOT, "results", "anomaly_detection")):
     os.makedirs(os.path.join(PROJECT_ROOT, "results", "anomaly_detection"))
 
+if not os.path.exists(os.path.join(PROJECT_ROOT, "results", "anomaly_detection", "pv_models")):
+    os.makedirs(os.path.join(PROJECT_ROOT, "results", "anomaly_detection", "pv_models"))
+
+if not os.path.exists(os.path.join(PROJECT_ROOT, "results", "anomaly_detection", "pv_models", "scalers")):
+    os.makedirs(os.path.join(PROJECT_ROOT, "results", "anomaly_detection", "pv_models", "scalers"))
+
+    if not os.path.exists(os.path.join(PROJECT_ROOT, "results", "anomaly_detection", "pv_models", "thresholds")):
+        os.makedirs(os.path.join(PROJECT_ROOT, "results", "anomaly_detection", "pv_models", "thresholds"))
+
+if not os.path.exists(os.path.join(PROJECT_ROOT, "results", "anomaly_detection", "pv_models", "loss")):
+    os.makedirs(os.path.join(PROJECT_ROOT, "results", "anomaly_detection", "pv_models", "loss"))
+
+if not os.path.exists(os.path.join(PROJECT_ROOT, "results", "anomaly_detection", "pv_models", "metrics")):
+    os.makedirs(os.path.join(PROJECT_ROOT, "results", "anomaly_detection", "pv_models", "metrics"))
+
 if not os.path.exists(os.path.join(PROJECT_ROOT, "figures")):
     os.makedirs(os.path.join(PROJECT_ROOT, "figures"))
 
@@ -39,3 +54,6 @@ if not os.path.exists(os.path.join(PROJECT_ROOT, "figures", "benchmarking", "fea
 
 if not os.path.exists(os.path.join(PROJECT_ROOT, "figures", "anomaly_detection")):
     os.makedirs(os.path.join(PROJECT_ROOT, "figures", "anomaly_detection"))
+
+if not os.path.exists(os.path.join(PROJECT_ROOT, "figures", "anomaly_detection", "pv_models")):
+    os.makedirs(os.path.join(PROJECT_ROOT, "figures", "anomaly_detection", "pv_models"))
