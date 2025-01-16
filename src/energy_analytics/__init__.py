@@ -16,6 +16,7 @@ required_directories = [
     "results",
     "results/kpi",
     "results/benchmarking",
+    "results/benchmarking/models",
     "results/anomaly_detection",
     "results/anomaly_detection/pv_models",
     "results/anomaly_detection/pv_models/scalers",
