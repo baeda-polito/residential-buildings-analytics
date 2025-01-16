@@ -82,3 +82,9 @@ Eseguendo gli script presenti nella cartella `pipeline` è possibile eseguire le
     ```bash
     pip install -r requirements.txt
     ```
+  
+### Contributors
+- [Rocco Giudice](https://github.com/Giudice7) - mail: [rocco.giudice@polito.it](mailto:rocco.giudice@polito.it)
+- [Antonio Gallo](http://www.baeda.polito.it/people/members/gallo_antonio) - mail: [antonio.gallo@polito.it](mailto:antonio.gallo@polito.it)
+- [Marco Savino Piscitelli](http://www.baeda.polito.it/people/members/piscitelli_marco_savino) - mail: [marco.piscitelli@polito.it](mailto:marco.piscitelli@polito.it)
+- [Alfonso Capozzoli](http://www.baeda.polito.it/people/lab_director/capozzoli_alfonso) - mail: [alfonso.capozzoli@polito.it](mailto:alalfonso.capozzoli@polito.it)
