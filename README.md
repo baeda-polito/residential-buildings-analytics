@@ -58,7 +58,7 @@ Eseguendo gli script presenti nella cartella `pipeline` è possibile eseguire le
 
 - Clonare il progetto da Github, aprendo il terminale ed eseguendo il seguente comando:
     ```bash
-  git clone https://github.com/Giudice7/ENEA24
+  git clone https://github.com/baeda-polito/residential-buildings-analytics
     ```
 
 - Aprire il terminare nella repository python del progetto.
