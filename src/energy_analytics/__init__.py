@@ -4,7 +4,7 @@ from .building import Building
 from .aggregate import Aggregate
 from .kpi import run_kpi
 from .benchmarking import run_benchmarking
-from .anomaly_detection import run_train, run_evaluation, detect_anomaly
+from .anomaly_detection import run_train, run_evaluation, detect_anomaly_pv
 from settings import PROJECT_ROOT
 from .utils import create_directories
 
