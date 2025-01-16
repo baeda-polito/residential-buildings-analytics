@@ -22,7 +22,7 @@ def run_train(aggregate: Aggregate):
     for building in aggregate.buildings:
         if building.building_info["user_type"] != "consumer":
             logger.info(f"Training del modello per l'edificio {building.building_info['id']} --- {building.building_info['name']}")
-            train(building.building_info["id"])
+            train(building)
 
 
 def run_evaluation(aggregate: Aggregate):

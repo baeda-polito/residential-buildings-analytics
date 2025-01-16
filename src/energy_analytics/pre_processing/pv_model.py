@@ -6,18 +6,18 @@ import pandas as pd
 import numpy as np
 
 
-def get_pv_production(lat, lon, tilt, azimuth, rated_power, weather):
+def get_pv_production(lat: float, lon: float, tilt: float, azimuth: float, rated_power: float, weather: pd.DataFrame) -> pd.DataFrame:
     """
     Calcola la produzione di energia fotovoltaica tramite modello fisico in pvlib.
     Args:
-        lat: latitudine
-        lon: longitudine
-        tilt: inclinazione del pannello
-        azimuth: azimut del pannello
-        rated_power: potenza nominale del pannello
-        weather: dati meteorologici
+        lat (float): latitudine
+        lon (float): longitudine
+        tilt (float): inclinazione del pannello
+        azimuth (float): azimut del pannello
+        rated_power (float): potenza nominale del pannello
+        weather (pd.DataFrame): dati meteorologici
     Returns:
-        pd.DataFrame con la produzione di energia fotovoltaica
+        pd.DataFrame con la produzione di energia fotovoltaica nella colonna "productionPower" e datetime index
     """
 
     weather['timestamp'] = pd.to_datetime(weather['timestamp'])

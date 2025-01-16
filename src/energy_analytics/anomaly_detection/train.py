@@ -55,10 +55,10 @@ def train(building: Building):
     trainer.train(train_loader, validation_loader)
 
     torch.save(mlp.state_dict(),
-               os.path.join(PROJECT_ROOT, "data", "anomaly_detection", "models", f"{building.building_info['id']}.pth"))
+               os.path.join(PROJECT_ROOT, "results", "anomaly_detection", "pv_models", f"{building.building_info['id']}.pth"))
     trainer.evaluate(torch.tensor(X_val, dtype=torch.float32), y_val, y_scaler)
 
     df_loss = pd.DataFrame({"train": trainer.loss_list_train, "validation": trainer.loss_list_valid})
 
-    df_loss.to_csv(os.path.join(PROJECT_ROOT, "data", "anomaly_detection", "loss", f"{building.building_info['id']}.csv"),
+    df_loss.to_csv(os.path.join(PROJECT_ROOT, "results", "anomaly_detection", "pv_models", "loss", f"{building.building_info['id']}.csv"),
                    index=False)

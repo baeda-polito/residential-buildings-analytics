@@ -1,1 +1,0 @@
-# Benchmarking esterno per la caratterizzazione dell'utenza residenziale

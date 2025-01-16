@@ -32,6 +32,12 @@ Il modulo è organizzato nel seguente modo:
 
 #### Modalità offline
 
+##### Trainare un singolo modello di produzione fotovoltaica
+
+```python
+
+```
+
 
 #### Modalità online
 

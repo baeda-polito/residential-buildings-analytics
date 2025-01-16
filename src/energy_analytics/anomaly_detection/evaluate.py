@@ -11,7 +11,7 @@ from settings import PROJECT_ROOT
 from ..building import Building
 from .mlp import MultiLayerPerceptron
 from .data_handler import DataHandler
-from .viz import plot_predictions, plot_distribution, plot_pred_vs_true
+from .viz import plot_predictions, plot_distribution, plot_pred_vs_true, heatmap_anomalies, plot_residuals
 
 
 def predict(model: MultiLayerPerceptron, X_tensor: torch.Tensor):
@@ -85,7 +85,17 @@ def evaluate_pv_model(building: Building):
      vs reali, un grafico con la distribuzione degli errori e un grafico con la distribuzione dei valori predetti vs
      reali. Salva i grafici in formato html.
 
+    Args:
+        building (Building): oggetto Building con i dati dell'edificio
+
+    Returns:
+        None
+
     """
+
+    # Check if the model is already trained
+    if not os.path.exists(os.path.join(PROJECT_ROOT, "results", "anomaly_detection", "pv_models", f"{building.building_info['id']}.pth")):
+        raise FileNotFoundError(f"Modello non trovato per l'edificio {building.building_info['id']}. Esegui prima la pipeline di addestramento!")
 
     mlp = MultiLayerPerceptron(input_size=5, hidden_layers=[64, 64], output_size=1)
     mlp.load_state_dict(torch.load(os.path.join(PROJECT_ROOT, "results", "anomaly_detection", "pv_models", f"{building.building_info['id']}.pth")))
@@ -141,3 +151,7 @@ def evaluate_pv_model(building: Building):
 
     fig_true_vs_pred = plot_pred_vs_true(data_plot, building.building_info["name"])
     fig_true_vs_pred.write_html(os.path.join(PROJECT_ROOT, "figures", "anomaly_detection", "pv_models", f"{building.building_info['id']}_true_vs_pred.html"))
+
+    # Evaluate anomaly impact and useful plot on residuals and severities
+    heatmap_anomalies(building)
+    plot_residuals(building)
