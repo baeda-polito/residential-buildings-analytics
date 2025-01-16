@@ -56,29 +56,38 @@ DU2.pre_process()
 
 #### Anomalie sul consumo energetico
 ```python
+import pandas as pd
+from src.energy_analytics.anomaly_detection import detect_anomaly_power
 
+load_profile = pd.Series()
+aggregate_name = ""
+user_type = ""
+
+anomaly = detect_anomaly_power(load_profile, aggregate_name, user_type)
+
+if anomaly:
+    print("Anomalia rilevata")
+else:
+    print("Nessuna anomalia rilevata")
 ```
 
 ####  Anomalie sulla produzione fotovoltaica
 ```python
 import pandas as pd
-import json
-import os
 
-from settings import PROJECT_ROOT
 from src.energy_analytics import Building, Aggregate, run_train, run_evaluation
 
 
-data_DU1 = pd.read_csv(os.path.join(PROJECT_ROOT, "data", "energy_meter", "7436df46-294b-4c97-bd1b-8aaa3aed97c5.csv"))
-metadata_DU1 = json.load(open(os.path.join(PROJECT_ROOT, "data", "metadata", "7436df46-294b-4c97-bd1b-8aaa3aed97c5.json")))
+data_DU1 = pd.DataFrame()
+metadata_DU1 = {}
 
-data_DU2 = pd.read_csv(os.path.join(PROJECT_ROOT, "data", "energy_meter", "80c3bedd-8c41-450c-ae52-1864b9ace7aa.csv"))
-metadata_DU2 = json.load(open(os.path.join(PROJECT_ROOT, "data", "metadata", "80c3bedd-8c41-450c-ae52-1864b9ace7aa.json")))
+data_DU2 = pd.DataFrame()
+metadata_DU2 = {}
 
-data_DU5 = pd.read_csv(os.path.join(PROJECT_ROOT, "data", "energy_meter", "b87be67b-8133-4b7f-a045-c06da08b5416.csv"))
-metadata_DU5 = json.load(open(os.path.join(PROJECT_ROOT, "data", "metadata", "b87be67b-8133-4b7f-a045-c06da08b5416.json")))
+data_DU5 = pd.DataFrame()
+metadata_DU5 = {}
 
-weather = pd.read_csv(os.path.join(PROJECT_ROOT, "data", "weather", "anguillara.csv"))
+weather = pd.DataFrame()
 
 DU1 = Building(data=data_DU1, weather_data=weather, metadata=metadata_DU1)
 DU2 = Building(data=data_DU2, weather_data=weather, metadata=metadata_DU2)
