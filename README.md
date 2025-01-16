@@ -2,11 +2,57 @@
 
 # Processi data-driven per l’individuazione automatica di anomalie energetiche e analisi di benchmarking in edifici residenziali
 
-Questa repository contiene il codice sviluppato per il contratto di ricerca tra BAEDA Lab ed ENEA 2022-24. Gli obiettivi del contratto di ricerca sono:
+Questa repository contiene il codice sviluppato per il _Report Ricerca di Sistema Elettrico - Tecnologie per la penetrazione efficiente del vettore elettrico negli usi finali - LA1.10 Processi data-driven di individuazione automatica di anomalie energetiche e benchmarking per edifici residenziali_ sviluppato in collaborazione tra [BAEDA Lab](https://baeda.polito.it/) ed ENEA. Le attività sviluppate riguardano:
 
-- Attività 1: ***Identificazione e diagnostica di anomalie energetiche negli edifici***: Questa attività ha lo scopo di definire processi data-driven per l’identificazione automatica e la diagnostica di anomalie energetiche in edifici residenziali sia rispetto ai profili di domanda di energia che rispetto ai profili di produzione dei sistemi di generazione (e.g., applicabile a sistemi di produzione fotovoltaici). Il suddetto processo, per quanto riguarda l’analisi dei dati di consumo energetico che pertiene gli edifici in analisi, sarà finalizzato all’individuazione di anomalie legate a specifici schemi comportamentali dell’utente e condizioni di qualità dell’ambiente interno in esercizio.  Similmente, per quanto concerne l’analisi dei dati di produzione di sistemi di generazione, l’obiettivo è quello di definire un processo che consenta l’individuazione automatica di profili di produzione infrequenti e\o anomali rispetto alle condizioni al contorno che ne hanno determinato sia forma che magnitudo.
-- Attività 2: ***Analisi di benchmarking esterno per la caratterizzazione dell’utenza residenziale***: Questa attività ha lo scopo di definire benchmark energetici che consentano di condurre analisi comparative esterne di trend di domanda di energia tra diversi utenti residenziali al fine di abilitare politiche di user engagement e di customer classification e valutare il relativo potenziale di flessibilità e resilienza dell’edificio. Tale processo consentirà di segmentare e classificare gli utenti residenziali a seconda del grado di similarità rispetto a pattern di consumo energetico tipologici estratti per mezzo di analisi non supervisionate e di time series analytics. La suddetta attività consentirà una completa caratterizzazione degli utenti residenziali abilitando la conseguente definizione di indicatori compatti rappresentativi di informazioni su come e quando il consumo di energia nell’edificio cambia nel corso di uno specifico intervallo di tempo (e.g., giorno, settimana) per diversi usi finali quali illuminazione, carichi di spina, riscaldamento e raffrescamento. Il processo che sarà sviluppato coerentemente con gli obiettivi di tale attività consentirà, inoltre, di prevedere per nuovi edifici inclusi nel parco edilizio di interesse il pattern tipologico di consumo energetico atteso, di fatto classificando un utente residenziale sfruttando la conoscenza di un numero limitato di variabili che lo caratterizzano.
-- Attività 3: ***Valutazione di indicatori compatti di prestazione***: Questa attività ha lo scopo di definire ed implementare KPIs e analisi e valutazione dello Smart Readiness Indicator (SRI) a livello di singolo utente residenziale. Inoltre sulla base delle risultanze delle attività condotte nelle scorse annualità relativamente all’ analisi critica di KPIs di flessibilità energetica in ambito residenziale, saranno implementati con un approccio data driven metriche in grado di quantificare il livello e la disponibilità all’ implementazione di strategie di gestione della domanda attiva al fine di fornire servizi alla rete e ad altri utenti connessi per mezzo di uno schema di comunità energetica.
+- Attività 1: ***Identificazione e diagnostica di anomalie energetiche negli edifici***: Questa attività ha lo scopo di definire processi data-driven per l’identificazione automatica e la diagnostica di anomalie energetiche in edifici residenziali sia rispetto ai profili di domanda di energia che rispetto ai profili di produzione dei sistemi di generazione (e.g., applicabile a sistemi di produzione fotovoltaici)
+- Attività 2: ***Analisi di benchmarking esterno per la caratterizzazione dell’utenza residenziale***: Questa attività ha lo scopo di definire benchmark energetici che consentano di condurre analisi comparative esterne di trend di domanda di energia tra diversi utenti residenziali al fine di abilitare politiche di user engagement e di customer classification e valutare il relativo potenziale di flessibilità e resilienza dell’edificio.
+- Attività 3: ***Valutazione di indicatori compatti di prestazione***: Questa attività ha lo scopo di definire ed implementare KPIs e analisi a livello di singolo utente residenziale.
+
+Il progetto utilizza i dati forniti dalla piattaforma DHOMUS e i dati meteo estratti da SOLCAST per sviluppare le metodologie analitiche descritte nelle attività.
+In particolare, i test sono stati condotti su un aggregato di edifici residenziali situati a Roma.
+
+### Struttura del progetto
+Il progetto è strutturato nei seguenti moduli:
+```plaintext
+.
+├── data                    
+│   ├── energy_meter              # Dati relativi a consumo e produzione energetica degli edifici
+│   │   ├── ...
+│   ├── metadata                  # Metadati degli edifici
+│   │   ├── ...
+│   ├── weather_data              # Dati meteo per l'aggregato
+│   │   ├── ...
+├── figures                       # Immagini e grafici
+│   ├── anomaly_detection
+│   │   ├── ...
+│   ├── benchmarking
+│   │   ├── ...
+│   ├── kpi
+│   │   ├── ...
+├── results                       # Risultati delle analisi
+│   ├── anomaly_detection
+│   │   ├── ...
+│   ├── benchmarking
+│   │   ├── ...
+│   ├── kpi
+│   │   ├── ...
+├── src                           # Codice sorgente
+│   ├── energy_analytics          # Moduli per l'analisi energetica
+│   │   ├── anomaly_detection
+│   │   │   ├── ...
+│   │   ├── benchmarking
+│   │   │   ├── ...
+│   │   ├── kpi
+│   │   │   ├── ...
+│   ├── api                       # API per l'interfacciamento con la piattforma DHOMUS e le piattaforme meteo
+│   ├── pipeline                  # Pipeline di analisi 
+├── README.md
+```
+
+Per eseguire le pipeline di analisi sviluppate nel pacchetto `energy_analytics` è necessario avere a disposizione i dati relativi al consumo energetico e alla produzione fotovoltaica degli edifici, i metadati degli edifici e i dati relativi alle condizioni meteorologiche. I dati devono essere organizzati in cartelle separate all'interno della cartella `data` come mostrato nella struttura del progetto, e devono strettamente aderire ad una struttura specifica. Per ulteriori dettagli fare riferimento alla documentazione di ciascun modulo.
+
+Eseguendo gli script presenti nella cartella `pipeline` è possibile eseguire le tre pipeline di analitica descritte nelle attività, in modalità _offline_. Per l'esecuzione online, fare riferimento alla documentazione di ciascun modulo. Eseguite le pipeline, i risultati saranno salvati nella cartella `results` e `figures`.
+ 
 
 ###  Configurazione del progetto
 
@@ -36,9 +82,3 @@ Questa repository contiene il codice sviluppato per il contratto di ricerca tra 
     ```bash
     pip install -r requirements.txt
     ```
-
-### API
-
-I dati utilizzati all'interno della repository si ottengono tramite API della piattaforma [DHOMUS](https://www.smarthome.enea.it/).
-Le API, contenute negli script `smarthome.py` (piattaforma DHOMUS) e `weather.py` (Solcast e Wundergound), sono disponibili anche su Postman, al seguente [link](https://enea-2023.postman.co/workspace/ENEA2023~2db199d8-7a21-4232-805a-a3580f7d87be/overview) (se non si ha l'accesso richiedere a *rocco.giudice@polito.it*).
-Ogni settimana è necessario rigenerare il bearer token della piattaforma DHOMUS, per farlo è necessario eseguire la POST **auth** nella raccolta *Authorization*. ([Link](https://apio.notion.site/Integrazione-API-Read-Telemetry-Dhomus-6b1f4afc145a43ba854a303c24cc092b) alla documentazione ENEA sulle API).
