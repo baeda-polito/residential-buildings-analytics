@@ -238,8 +238,8 @@ def heatmap_anomalies(building: Building):
     sum_high = (df_add[df_add["severity"] == 1]["residuals"] - df_add[df_add["severity"] == 1][
         "HT"]).sum() * 0.25 / 1000
 
-    logger.info(f"Numeri di anomalie di bassa severità: {count_low} -- Energia associata: {sum_low:.1f} kWh")
-    logger.info(f"Numeri di anomalie di alta severità: {count_high} -- Energia associata: {sum_high:.1f} kWh")
+    logger.debug(f"Numeri di anomalie di bassa severità: {count_low} -- Energia associata: {sum_low:.1f} kWh")
+    logger.debug(f"Numeri di anomalie di alta severità: {count_high} -- Energia associata: {sum_high:.1f} kWh")
 
 
 def plot_residuals(building: Building):

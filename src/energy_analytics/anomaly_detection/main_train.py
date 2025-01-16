@@ -41,5 +41,5 @@ def run_evaluation(aggregate: Aggregate):
     for building in aggregate.buildings:
         if building.building_info["user_type"] != "consumer":
             logger.info(f"Valutazione del modello per l'edificio {building.building_info['id']} --- {building.building_info['name']}")
-            evaluate_pv_model(building)
             calculate_threshold(building)
+            evaluate_pv_model(building)
