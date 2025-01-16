@@ -1,7 +1,9 @@
+import os
 import json
 import pandas as pd
 from loguru import logger
 
+from settings import PROJECT_ROOT
 from ..building import Building
 from ..aggregate import Aggregate
 from .utils import get_operating_hours
@@ -253,7 +255,7 @@ def calculate_performance_score_user(building: Building, cluster: pd.DataFrame) 
             "on_site_generation_ratio": 0
         }
 
-    with open("kpi/config.json", "r") as f:
+    with open(os.path.join(PROJECT_ROOT, "src", "energy_analytics", "kpi", "config.json"), "r") as f:
         config = json.load(f)
 
     # Create a score_dict where each key, that has the name of the KPI, has a dict with "name" and "value"

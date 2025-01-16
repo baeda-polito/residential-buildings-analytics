@@ -140,7 +140,7 @@ def plot_load_profiles_aggregate(aggregate: Aggregate, cluster=None) -> None:
         raise FileNotFoundError(
             f"File cluster_{aggregate.name}_assigned.csv not found in results. Run assign_cluster first or purchase the cluster file.")
     elif cluster is None:
-        cluster = pd.read_csv(os.path.join(PROJECT_ROOT, "results", f"cluster_{aggregate.name}_assigned.csv"))
+        cluster = pd.read_csv(os.path.join(PROJECT_ROOT, "results", "benchmarking", f"cluster_{aggregate.name}_assigned.csv"))
 
     if not os.path.exists(
             os.path.join(PROJECT_ROOT, "results", "benchmarking", f"medioid_{aggregate.name}_consumer.csv")):
@@ -177,8 +177,8 @@ def plot_load_profiles_aggregate(aggregate: Aggregate, cluster=None) -> None:
 
     # Calculate the centroids
     medioids = pd.concat([
-        pd.read_csv(os.path.join(PROJECT_ROOT, "results", f"medioid_{aggregate.name}_consumer.csv"), index_col=0),
-        pd.read_csv(os.path.join(PROJECT_ROOT, "results", f"medioid_{aggregate.name}_prosumer.csv"), index_col=0),
+        pd.read_csv(os.path.join(PROJECT_ROOT, "results", "benchmarking", f"medioid_{aggregate.name}_consumer.csv"), index_col=0),
+        pd.read_csv(os.path.join(PROJECT_ROOT, "results", "benchmarking", f"medioid_{aggregate.name}_prosumer.csv"), index_col=0),
     ]).reset_index(names="cluster")
     medioids = medioids.melt(id_vars="cluster", var_name="hour", value_name="Load_norm")
 

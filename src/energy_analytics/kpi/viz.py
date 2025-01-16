@@ -15,7 +15,7 @@ def plot_daily_kpi(daily_kpi: pd.DataFrame):
     :return:
     """
 
-    with open("kpi/config.json", "r") as f:
+    with open(os.path.join(PROJECT_ROOT, "src", "energy_analytics", "kpi", "config.json"), "r") as f:
         config = json.load(f)
 
     kpi_columns = daily_kpi.columns.tolist()
@@ -61,7 +61,7 @@ def plot_kpi_distribution(daily_kpi: pd.DataFrame):
     :param daily_kpi: il dataframe con i KPI giornalieri. Ha una colonna "date" e una colonna per ogni KPI
     :return: la figura con i plot
     """
-    with open("kpi/config.json", "r") as f:
+    with open(os.path.join(PROJECT_ROOT, "src", "energy_analytics", "kpi", "config.json"), "r") as f:
         config = json.load(f)
 
     kpi_columns = daily_kpi.columns.tolist()
@@ -134,7 +134,7 @@ def plot_boxplot_kpi_aggregate(df_kpi_aggregate: pd.DataFrame):
     :return: la figura con il plot
     """
 
-    with open("kpi/config.json", "r") as f:
+    with open(os.path.join(PROJECT_ROOT, "src", "energy_analytics", "kpi", "config.json"), "r") as f:
         config = json.load(f)
 
     kpi_columns = df_kpi_aggregate.columns.tolist()

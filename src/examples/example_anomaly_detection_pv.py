@@ -52,4 +52,3 @@ for building in aggregate.buildings:
 
 run_train(aggregate)
 run_evaluation(aggregate)
-

@@ -50,6 +50,4 @@ aggregate = Aggregate(name="anguillara", buildings=[DU1, DU2, DU4, DU5, DU6, DU7
 for building in aggregate.buildings:
     building.pre_process()
 
-cluster = pd.read_csv(os.path.join(PROJECT_ROOT, "results", "benchmarking", "cluster_anguillara.csv"))
-
 run_benchmarking(aggregate)
