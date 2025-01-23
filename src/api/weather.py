@@ -4,6 +4,7 @@ import os
 from io import StringIO
 import pandas as pd
 from settings import PROJECT_ROOT
+from dotenv import load_dotenv
 
 
 def get_historical_data_wunderground(location_code: str, start_date: str, end_date: str) -> list:  # deprecated
@@ -63,7 +64,7 @@ def get_historical_data_solcast(start_date: str, lat=42.0837, lon=12.283):
 
     payload = {}
     headers = {
-        'Authorization': 'Bearer: 71CqcfmESLAzBG6xvBRMpPwGMmy7SuZD',
+        'Authorization': f"Bearer: {os.getenv('SOLCAST_TOKEN')}",
         'Cookie': 'ss-id=4VKIKYxPYBajVk2kRlQL; ss-opt=temp; ss-pid=MXwb5hzFR0EQD7vlBOwW'
     }
 
