@@ -94,7 +94,7 @@ class EnergyData:
             rated_power=metadata["rated_power"],
             rated_pv_power=metadata["pv"]["rated_power"] if "rated_power" in metadata["pv"] else None
         )
-        data_power["timestamp"] = pd.to_datetime(data_power["timestamp"], utc=True)
+        data_power["timestamp"] = pd.to_datetime(data_power["timestamp"])
         data_power = data_power.set_index("timestamp")
         # data_power.index = pd.to_datetime(data_power.index)
         data_cleaned = data_cleaned.set_index("timestamp")

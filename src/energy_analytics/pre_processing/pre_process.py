@@ -85,7 +85,7 @@ def pre_process_production_power(data: pd.DataFrame, weather_data: pd.DataFrame,
         raise ValueError(f"Weather data must have the following columns: {required_columns_weather}")
 
     data["timestamp"] = pd.to_datetime(data["timestamp"])
-    weather_data["timestamp"] = pd.to_datetime(weather_data["timestamp"])
+    weather_data["timestamp"] = pd.to_datetime(weather_data["timestamp"]).dt.tz_localize(None)
 
     data_model = pd.merge(data, weather_data, on="timestamp", how="right")
     data_model.set_index("timestamp", inplace=True)
@@ -131,8 +131,8 @@ def pre_process_production_power(data: pd.DataFrame, weather_data: pd.DataFrame,
             azimuth=pv_params["azimuth"],
             rated_power=pv_params["rated_power"] * 1000,
             weather=weather_data)
-        pv_production.index = pd.to_datetime(pv_production.index, utc=True)
-        data_to_reconstruct.index = pd.to_datetime(data_to_reconstruct.index, utc=True)
+        pv_production.index = pd.to_datetime(pv_production.index)
+        data_to_reconstruct.index = pd.to_datetime(data_to_reconstruct.index)
         data_to_reconstruct.loc[data_to_reconstruct.index, "productionPower"] = pv_production.loc[
             data_to_reconstruct.index, "productionPower"]
         data_pre_processed = pd.concat([data_model, data_to_reconstruct])[['productionPower']]
