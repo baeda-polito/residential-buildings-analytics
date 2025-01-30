@@ -31,7 +31,7 @@ def get_anomaly_residuals(building: Building) -> pd.DataFrame:
     energy_data = building.energy_data.data_cleaned
     energy_data["timestamp"] = pd.to_datetime(energy_data["timestamp"])
     weather_data = building.energy_data.weather_data
-    weather_data["timestamp"] = pd.to_datetime(weather_data["timestamp"])
+    weather_data["timestamp"] = pd.to_datetime(weather_data["timestamp"]).dt.tz_localize(None)
 
     solar_angles = location.get_solarposition(times=weather_data["timestamp"]).reset_index()
     weather_data = pd.merge(weather_data, solar_angles[["timestamp", "azimuth", "zenith"]], on="timestamp",

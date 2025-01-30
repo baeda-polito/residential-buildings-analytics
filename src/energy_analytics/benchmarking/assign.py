@@ -136,7 +136,7 @@ def assign_cluster(aggregate: Aggregate) -> None:
     df.to_csv(os.path.join(PROJECT_ROOT, "results", "benchmarking", f"cluster_{aggregate.name}_assigned.csv"), index=False)
 
 
-def assign_to_nearest_or_anomalous(load_profile: pd.Series, medioids: pd.DataFrame, threshold: float = 3):
+def assign_to_nearest_or_anomalous(load_profile: pd.Series, medioids: pd.DataFrame, threshold: float = 3.5):
     """
     Assegna un profilo di carico al cluster del medioide più vicino, a meno che la distanza non superi la soglia.
     Se la distanza è maggiore della soglia, il profilo viene assegnato al cluster "Anomalous".

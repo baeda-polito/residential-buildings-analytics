@@ -6,6 +6,8 @@ import pandas as pd
 from settings import PROJECT_ROOT
 from dotenv import load_dotenv
 
+load_dotenv(os.path.join(PROJECT_ROOT, ".env"))
+
 
 def get_historical_data_wunderground(location_code: str, start_date: str, end_date: str) -> list:  # deprecated
     """
@@ -82,5 +84,5 @@ if __name__ == "__main__":
     lat_anguillara = 42.0837
     lon_anguillara = 12.283
 
-    df = get_historical_data_solcast("2024-01-02T00:00:00Z", lat=lat_anguillara, lon=lon_anguillara)
-    df.to_csv(os.path.join(PROJECT_ROOT, "data", "weather", "anguillara_2024-02.csv"), index=False)
+    df = get_historical_data_solcast("2024-12-01T00:00:00Z", lat=lat_anguillara, lon=lon_anguillara)
+    df.to_csv(os.path.join(PROJECT_ROOT, "data", "weather", "anguillara_2024-12.csv"), index=False)

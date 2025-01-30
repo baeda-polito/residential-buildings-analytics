@@ -38,7 +38,7 @@ class DataHandler:
             pd.DataFrame: dataframe con i dati relativi alla produzione e al meteo contenente le colonne "Production", "ghi", "dni", "air_temp", "azimuth", "zenith".
         """
         self.energy_data["timestamp"] = pd.to_datetime(self.energy_data["timestamp"])
-        self.weather_data["timestamp"] = pd.to_datetime(self.weather_data["timestamp"])
+        self.weather_data["timestamp"] = pd.to_datetime(self.weather_data["timestamp"]).dt.tz_localize(None)
         solar_angles = location.get_solarposition(times=self.weather_data["timestamp"]).reset_index()
         self.weather_data = pd.merge(self.weather_data, solar_angles[["timestamp", "azimuth", "zenith"]], on="timestamp",
                                      how="right")

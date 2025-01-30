@@ -48,6 +48,10 @@ def calculate_threshold(building: Building):
     df_residuals["hour"] = df_residuals.index.hour
     df_residuals = df_residuals[df_residuals["residuals"] >= 0]
 
+    index_irradiance = weather_data.loc[(weather_data["ghi"] > 0) | (weather_data["dni"] > 0), "timestamp"]
+
+    df_residuals = df_residuals.loc[df_residuals.index.isin(index_irradiance)]
+
     lt_dict = {}
     ht_dict = {}
     # Calculate the Z-score threshold for each hour
