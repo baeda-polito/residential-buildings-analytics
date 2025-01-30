@@ -29,8 +29,6 @@ def save_energy_data(building_id: str, time_from: str, time_to: str):
     time_to_utc = time_to_dt.tz_localize("Europe/Rome").tz_convert("UTC")
     time_from_utc = time_from_dt.tz_localize("Europe/Rome").tz_convert("UTC")
 
-    full_range = pd.date_range(start=time_from, end=time_to, freq='15T')
-
     building_devices = get_devices(building_id)
     device_id = None
     for device in building_devices:
@@ -41,23 +39,38 @@ def save_energy_data(building_id: str, time_from: str, time_to: str):
     if device_id is not None:
         properties = ["power_arithmeticMean_quarter", "impEnergy_delta_quarter", "expEnergy_delta_quarter",
                       "productionEnergy_delta_quarter", "productionPower_arithmeticMean_quarter"]
-        data = get_data_device(device_id, properties, time_to_utc.strftime('%Y-%m-%dT%H:%M:%SZ'), time_from_utc.strftime('%Y-%m-%dT%H:%M:%SZ'))
-        data_formatted = {col: dict(values) for col, values in data.items()}
-        df = pd.DataFrame.from_dict(data_formatted)
-        df.rename(columns={"power_arithmeticMean_quarter": "power", "impEnergy_delta_quarter": "impEnergy",
-                           "expEnergy_delta_quarter": "expEnergy", "productionEnergy_delta_quarter": "productionEnergy",
-                           "productionPower_arithmeticMean_quarter": "productionPower"}, inplace=True)
-        index = df.index
+
+        df_full_range_utc = pd.DataFrame(pd.date_range(start=time_from_utc, end=time_to_utc, freq='15T'), columns=["timestamp"])
+        groups_month = df_full_range_utc.groupby(df_full_range_utc["timestamp"].dt.to_period("M"))
+
+        df_months_list = []
+        for group in groups_month.groups:
+            logger.debug(f"Downloading data for month {group}")
+            time_from_month = groups_month.get_group(group).iloc[0]["timestamp"]
+            time_to_month = groups_month.get_group(group).iloc[-1]["timestamp"]
+            data = get_data_device(device_id, properties, time_to_month.strftime('%Y-%m-%dT%H:%M:%SZ'), time_from_month.strftime('%Y-%m-%dT%H:%M:%SZ'))
+            data_formatted = {col: dict(values) for col, values in data.items()}
+            df = pd.DataFrame.from_dict(data_formatted)
+            df.rename(columns={"power_arithmeticMean_quarter": "power", "impEnergy_delta_quarter": "impEnergy",
+                               "expEnergy_delta_quarter": "expEnergy", "productionEnergy_delta_quarter": "productionEnergy",
+                               "productionPower_arithmeticMean_quarter": "productionPower"}, inplace=True)
+
+            df_months_list.append(df)
+
+        data = pd.concat(df_months_list)
+        data.index = pd.to_datetime(data.index)
+        data = data.sort_index()
+        data = data.reindex(pd.date_range(start=time_from_utc, end=time_to_utc, freq='15T'), fill_value=np.nan)
+        data = data.replace({None: np.nan})
+        index = data.index
         index = pd.to_datetime(index, utc=True).tz_convert("Europe/Rome").tz_localize(None)
-        df.index = index
-        df.replace({None: np.nan}, inplace=True)
-        df = df.reindex(full_range, fill_value=np.nan)
-        df.reset_index(inplace=True, names=["timestamp"])
-        df.sort_values(by="timestamp", inplace=True)
+        data.index = index
+        data = data.reset_index(names=["timestamp"])
+        data.sort_values(by="timestamp", inplace=True)
 
         # Save CSV
         csv_path = os.path.join(PROJECT_ROOT, "data", "energy_meter", f"{building_id}.csv")
-        df.to_csv(csv_path, index=False)
+        data.to_csv(csv_path, index=False)
         logger.debug(f"CSV file saved for building {building_id} at {csv_path}")
     else:
         warning_msg = f"No user device found for building {building_id}"
