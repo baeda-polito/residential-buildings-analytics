@@ -40,6 +40,8 @@ def save_energy_data(building_id: str, time_from: str, time_to: str):
         properties = ["power_arithmeticMean_quarter", "impEnergy_delta_quarter", "expEnergy_delta_quarter",
                       "productionEnergy_delta_quarter", "productionPower_arithmeticMean_quarter"]
 
+        # Group the full range by month and take the first and last datetime of each month in order to reduce the number of requests
+        # Group full_range by month
         df_full_range_utc = pd.DataFrame(pd.date_range(start=time_from_utc, end=time_to_utc, freq='15T'), columns=["timestamp"])
         groups_month = df_full_range_utc.groupby(df_full_range_utc["timestamp"].dt.to_period("M"))
 
@@ -60,11 +62,12 @@ def save_energy_data(building_id: str, time_from: str, time_to: str):
         data = pd.concat(df_months_list)
         data.index = pd.to_datetime(data.index)
         data = data.sort_index()
-        data = data.reindex(pd.date_range(start=time_from_utc, end=time_to_utc, freq='15T'), fill_value=np.nan)
         data = data.replace({None: np.nan})
         index = data.index
         index = pd.to_datetime(index, utc=True).tz_convert("Europe/Rome").tz_localize(None)
         data.index = index
+        data = data[~data.index.duplicated(keep='last')]
+        data = data.reindex(pd.date_range(start=time_from, end=time_to, freq='15T'), fill_value=np.nan)
         data = data.reset_index(names=["timestamp"])
         data.sort_values(by="timestamp", inplace=True)
 
