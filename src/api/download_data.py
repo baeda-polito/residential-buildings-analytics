@@ -5,7 +5,7 @@ from loguru import logger
 
 from settings import PROJECT_ROOT
 from src.energy_analytics import Aggregate
-from .smarthome import get_data_device, get_devices
+from src.api.smarthome import get_data_device, get_devices
 
 
 def save_energy_data(building_id: str, time_from: str, time_to: str):
@@ -21,25 +21,15 @@ def save_energy_data(building_id: str, time_from: str, time_to: str):
         None
     """
 
-    # TODO: Refactor this function
-
     logger.info(f"Starting data save process for building {building_id}, from {time_from} to {time_to}")
 
     time_from_dt = pd.to_datetime(time_from)
     time_to_dt = pd.to_datetime(time_to)
 
-    time_from_tz = time_from_dt.tz_localize("Europe/Rome")
-    time_to_tz = time_to_dt.tz_localize("Europe/Rome")
+    time_to_utc = time_to_dt.tz_localize("Europe/Rome").tz_convert("UTC")
+    time_from_utc = time_from_dt.tz_localize("Europe/Rome").tz_convert("UTC")
 
-    # Obtaining the timedelta between Europe/Rome and UTC
-    time_delta_from = time_from_tz.utcoffset().total_seconds() / 3600
-    time_delta_to = time_to_tz.utcoffset().total_seconds() / 3600
-
-    # Adjusting the time to UTC
-    time_from_dt = time_from_dt - pd.Timedelta(hours=-time_delta_from)
-    time_to_dt = time_to_dt - pd.Timedelta(hours=-time_delta_to)
-
-    full_range = pd.date_range(start=time_from, end=time_to, freq='15T', tz="UTC")
+    full_range = pd.date_range(start=time_from, end=time_to, freq='15T')
 
     building_devices = get_devices(building_id)
     device_id = None
@@ -51,18 +41,18 @@ def save_energy_data(building_id: str, time_from: str, time_to: str):
     if device_id is not None:
         properties = ["power_arithmeticMean_quarter", "impEnergy_delta_quarter", "expEnergy_delta_quarter",
                       "productionEnergy_delta_quarter", "productionPower_arithmeticMean_quarter"]
-        data = get_data_device(device_id, properties, time_to_dt, time_from_dt)
+        data = get_data_device(device_id, properties, time_to_utc.strftime('%Y-%m-%dT%H:%M:%SZ'), time_from_utc.strftime('%Y-%m-%dT%H:%M:%SZ'))
         data_formatted = {col: dict(values) for col, values in data.items()}
         df = pd.DataFrame.from_dict(data_formatted)
         df.rename(columns={"power_arithmeticMean_quarter": "power", "impEnergy_delta_quarter": "impEnergy",
                            "expEnergy_delta_quarter": "expEnergy", "productionEnergy_delta_quarter": "productionEnergy",
                            "productionPower_arithmeticMean_quarter": "productionPower"}, inplace=True)
-        df.index = pd.to_datetime(df.index, utc=True)
-        # Replace None with NaN
+        index = df.index
+        index = pd.to_datetime(index, utc=True).tz_convert("Europe/Rome").tz_localize(None)
+        df.index = index
         df.replace({None: np.nan}, inplace=True)
         df = df.reindex(full_range, fill_value=np.nan)
         df.reset_index(inplace=True, names=["timestamp"])
-        df["timestamp"] = pd.to_datetime(df["timestamp"])
         df.sort_values(by="timestamp", inplace=True)
 
         # Save CSV
